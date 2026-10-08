@@ -69,13 +69,14 @@ create table projects (
     description text,
     visibility varchar(20) not null default 'private' check (visibility in ('private', 'workspace', 'public')),
     forked_from_id bigint references projects(id) on delete
-    set null check (
-            forked_from_id is null
-            or forked_from_id <> id
-        ),
+    set null,
         created_at timestamptz not null default now(),
         updated_at timestamptz not null default now(),
-        archived_at timestamptz default null
+        archived_at timestamptz default null,
+        check (
+            forked_from_id is null
+            or forked_from_id <> id
+        )
 );
 create table project_members (
     project_id bigint not null references projects(id) on delete cascade,
