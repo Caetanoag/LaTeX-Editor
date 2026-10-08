@@ -61,3 +61,28 @@ create table workspace_members (
     joined_at timestamptz not null default now(),
     primary key (workspace_id, user_id)
 );
+create table projects (
+    id bigserial primary key,
+    workspace_id bigint not null references workspaces(id) on delete cascade,
+    owner_id bigint not null references users(id),
+    title varchar(200) not null,
+    description text,
+    visibility varchar(20) not null default 'private' check (visibility in ('private', 'workspace', 'public')),
+    forked_from_id bigint references projects(id) check (
+        forked_from_id is null
+        or forked_from_id <> id
+    ) on delete
+    set null,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now(),
+        archived_at timestamptz default null
+);
+create table project_members (
+    project_id bigint not null references projects(id) on delete cascade,
+    user_id bigint not null references users(id) on delete cascade,
+    role_id int not null references roles(id),
+    granted_by bigint references users(id),
+    granted_at timestamptz not null default now(),
+    expires_at timestamptz,
+    primary key (project_id, user_id)
+);
