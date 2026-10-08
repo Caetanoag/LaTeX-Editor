@@ -1,0 +1,14 @@
+{
+	"name": "LaTeX-Editor",
+	"version": "0.1.0",
+	"description": "A self-hosted, open-source LaTeX editor built with TypeScript.",
+	"main": "src/server/index.ts",
+	"repository": "https://github.com/caetanoag/LaTeX-Editor.git",
+	"author": "Caetano G.",
+	"license": "MIT",
+	"scripts": {
+		"build:client": "bun build ./src/client/main.ts --outfile ./public/bundle.js --target browser",
+		"dev": "bun --watch src/server/index.ts",
+		"start": "bun run src/server/index.ts"
+	}
+}
