@@ -68,11 +68,11 @@ create table projects (
     title varchar(200) not null,
     description text,
     visibility varchar(20) not null default 'private' check (visibility in ('private', 'workspace', 'public')),
-    forked_from_id bigint references projects(id) check (
-        forked_from_id is null
-        or forked_from_id <> id
-    ) on delete
-    set null,
+    forked_from_id bigint references projects(id) on delete
+    set null check (
+            forked_from_id is null
+            or forked_from_id <> id
+        ),
         created_at timestamptz not null default now(),
         updated_at timestamptz not null default now(),
         archived_at timestamptz default null
