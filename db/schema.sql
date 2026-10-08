@@ -52,14 +52,18 @@ create table workspace_invitations (
     token text not null unique,
     expires_at timestamptz not null,
     accepted_at timestamptz,
-    created_at timestamptz not null default now()
+    created_at timestamptz not null default now(),
+    check (
+        accepted_at is null
+        or accepted_at >= created_at
+    )
 );
 create table workspace_members (
     workspace_id bigint not null references workspaces(id) on delete cascade,
     user_id bigint not null references users(id) on delete cascade,
     role_id int not null references roles(id),
     joined_at timestamptz not null default now(),
-    invited_by bigserial references users(id),
+    invited_by bigint references users(id),
     primary key (workspace_id, user_id)
 );
 create table projects (
@@ -86,5 +90,9 @@ create table project_members (
     granted_by bigint references users(id),
     granted_at timestamptz not null default now(),
     expires_at timestamptz,
-    primary key (project_id, user_id)
+    primary key (project_id, user_id),
+    check (
+        expires_at is null
+        or expires_at > granted_at
+    )
 );
