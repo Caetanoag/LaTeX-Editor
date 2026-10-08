@@ -59,6 +59,7 @@ create table workspace_members (
     user_id bigint not null references users(id) on delete cascade,
     role_id int not null references roles(id),
     joined_at timestamptz not null default now(),
+    invited_by bigserial references users(id),
     primary key (workspace_id, user_id)
 );
 create table projects (
