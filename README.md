@@ -1,6 +1,6 @@
 # LaTeX Editor
 
-A lightweight, self-hosted, open-source LaTeX editor built with TypeScript.
+A self-hosted, open-source LaTeX editor built with TypeScript.
 
 ## Key Features
 
