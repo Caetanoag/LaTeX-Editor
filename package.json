@@ -8,8 +8,8 @@
 	"license": "MIT",
 	"scripts": {
 		"build:client": "bun build ./src/client/main.ts --outfile ./public/bundle.js --target browser",
-		"dev": "bun --watch src/server/index.ts",
-		"start": "bun run src/server/index.ts"
+		"dev": "bun --watch src/server/server.ts",
+		"start": "bun run src/server/server.ts"
 	},
 	"dependencies": {
 		"@types/bun": "^1.4.2",
