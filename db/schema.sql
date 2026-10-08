@@ -33,3 +33,31 @@ create table role_permissions (
     permission_id int not null references permissions(id) on delete cascade,
     primary key (role_id, permission_id)
 );
+create table workspaces (
+    id bigserial primary key,
+    name varchar(100) not null,
+    url_identifier citext not null unique,
+    description text,
+    owner_id bigint not null references users(id),
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    deleted_at timestamptz default null
+);
+create table workspace_invitations (
+    id bigserial primary key,
+    workspace_id bigint not null references workspaces(id) on delete cascade,
+    email citext not null,
+    role_id int not null references roles(id),
+    invited_by bigint not null references users(id),
+    token text not null unique,
+    expires_at timestamptz not null,
+    accepted_at timestamptz,
+    created_at timestamptz not null default now()
+);
+create table workspace_members (
+    workspace_id bigint not null references workspaces(id) on delete cascade,
+    user_id bigint not null references users(id) on delete cascade,
+    role_id int not null references roles(id),
+    joined_at timestamptz not null default now(),
+    primary key (workspace_id, user_id)
+);
