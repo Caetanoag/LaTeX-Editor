@@ -1,16 +1,18 @@
-# LaTeX-Editor
-Self hosted opensource LaTeX editor built with TypeScript
+# LaTeX Editor
+
+A lightweight, self-hosted, open-source LaTeX editor built with TypeScript.
 
 ## Key Features
-- **Browser-based:** Start a web-server to run it locally and acess from any computer in your network.
-- **Multi-user application:** Support for multiple user or profiles.
-- **File sharing:** Share your work with multiple users and give them permissions to edit it.
-- **Local PostgreSQL Database**  Save sessions after closing the program.
+
+- **Browser-Based Access:** Run the server locally and access the editor from any machine on your network.
+- **Multi-User Architecture:** Native support for multiple users, accounts, and profile management.
+- **Document Collaboration:** Share projects with team members and manage access permissions (e.g., editing and viewing rights).
+- **Persistent Storage:** Integrated PostgreSQL database to safely store user sessions, projects, and document data.
 
 ## Tech Stack
 
 - **Frontend:** HTML5, CSS3, TypeScript
 - **Backend:** TypeScript, Express.js
-- **Build and Runtime:** Bun
-- **Bundle System:** Docker
+- **Runtime & Build Tool:** Bun
+- **Containerization:** Docker
 - **Database:** PostgreSQL
