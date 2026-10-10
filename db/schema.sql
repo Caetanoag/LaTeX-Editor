@@ -118,16 +118,6 @@ create table file_versions (
     created_at timestamptz not null default now(),
     unique(file_id, version_hash)
 );
-create table file_dependencies (
-    file_id bigint not null references project_files(id) on delete cascade,
-    depends_on_id bigint not null references project_files(id) on delete cascade,
-    reference_type varchar(20) not null check (
-        reference_type in ('input', 'include', 'bibliography', 'subfile')
-    ),
-    primary key (file_id, depends_on_id),
-    check (file_id <> depends_on_id)
-);
-create index file_dependencies_reverse_idx on file_dependencies (depends_on_id);
 create table comments (
     id bigserial primary key,
     project_id bigint not null references projects(id) on delete cascade,
