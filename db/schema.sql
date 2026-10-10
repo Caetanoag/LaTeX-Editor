@@ -153,3 +153,16 @@ create table comments (
         or resolved_at >= created_at
     )
 );
+create table tags (
+    id bigserial primary key,
+    name citext not null unique,
+    created_at timestamptz not null default now(),
+    created_by bigint references users(id)
+);
+create table project_tags (
+    project_id bigint not null references projects(id) on delete cascade,
+    tag_id bigint not null references tags(id) on delete cascade,
+    added_by bigint references users(id),
+    added_at timestamptz not null default now(),
+    primary key (project_id, tag_id)
+);
