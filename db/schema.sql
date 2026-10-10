@@ -128,3 +128,28 @@ create table file_dependencies (
     check (file_id <> depends_on_id)
 );
 create index file_dependencies_reverse_idx on file_dependencies (depends_on_id);
+create table comments (
+    id bigserial primary key,
+    project_id bigint not null references projects(id) on delete cascade,
+    file_id bigint references project_files(id) on delete cascade,
+    created_by bigint not null references users(id),
+    resolved_by bigint references users(id),
+    content text not null default '',
+    parent_id bigint references comments(id) on delete cascade,
+    line_number int,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    resolved_at timestamptz,
+    check (
+        line_number is null
+        or file_id is not null
+    ),
+    check (
+        line_number is null
+        or line_number > 0
+    ),
+    check (
+        resolved_at is null
+        or resolved_at >= created_at
+    )
+);
