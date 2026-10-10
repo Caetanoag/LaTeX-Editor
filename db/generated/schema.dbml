@@ -104,6 +104,49 @@ Table "project_members" {
   }
 }
 
+Table "project_files" {
+  "id" bigserial [pk, increment]
+  "project_id" bigint [not null]
+  "file_path" text [not null]
+  "file_content" text [not null, default: '']
+  "is_main" boolean [not null, default: false]
+  "created_at" timestamptz [not null, default: `now()`]
+  "updated_at" timestamptz [not null, default: `now()`]
+
+  Indexes {
+    (project_id, file_path) [unique]
+    project_id [unique, name: "project_files_one_main_idx"]
+  }
+}
+
+Table "file_versions" {
+  "id" bigserial [pk, increment]
+  "file_id" bigint [not null]
+  "version_hash" text [not null]
+  "message" text
+  "content" text [not null, default: '']
+  "author_id" bigint [not null]
+  "created_at" timestamptz [not null, default: `now()`]
+
+  Indexes {
+    (file_id, version_hash) [unique]
+  }
+}
+
+Table "comments" {
+  "id" bigserial [pk, increment]
+  "project_id" bigint [not null]
+  "file_id" bigint
+  "created_by" bigint [not null]
+  "resolved_by" bigint
+  "content" text [not null, default: '']
+  "parent_id" bigint
+  "line_number" int
+  "created_at" timestamptz [not null, default: `now()`]
+  "updated_at" timestamptz [not null, default: `now()`]
+  "resolved_at" timestamptz
+}
+
 Ref:"users"."id" < "user_profiles"."user_id" [delete: cascade]
 
 Ref:"roles"."id" < "role_permissions"."role_id" [delete: cascade]
@@ -139,3 +182,19 @@ Ref:"users"."id" < "project_members"."user_id" [delete: cascade]
 Ref:"roles"."id" < "project_members"."role_id"
 
 Ref:"users"."id" < "project_members"."granted_by"
+
+Ref:"projects"."id" < "project_files"."project_id" [delete: cascade]
+
+Ref:"project_files"."id" < "file_versions"."file_id" [delete: cascade]
+
+Ref:"users"."id" < "file_versions"."author_id"
+
+Ref:"projects"."id" < "comments"."project_id" [delete: cascade]
+
+Ref:"project_files"."id" < "comments"."file_id" [delete: cascade]
+
+Ref:"users"."id" < "comments"."created_by"
+
+Ref:"users"."id" < "comments"."resolved_by"
+
+Ref:"comments"."id" < "comments"."parent_id" [delete: cascade]
