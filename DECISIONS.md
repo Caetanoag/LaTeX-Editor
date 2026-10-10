@@ -81,3 +81,24 @@ Juntos, formam uma linha do tempo atribuída por autor.
 
 - O insert em `file_versions` deve usar `on conflict (file_id, version_hash) do nothing`. Se o conteúdo não mudou desde a última versão, o hash é o mesmo
 e nada é inserido.
+
+## Comentários
+
+A tabela `comments` guarda discussões ancordas em uma linha, arquivo completo ou projeto, com um sistema de respostas que cria uma linha de respostas inter conectadas, com hierarquias. Se o primeiro comentário for apagado, toda thread vai junto.
+
+- `parent_id` referência o comentário que um comentário responde. Se esse parent é deletado, o `on delete cascade` garante que tudo abaixo dele também é apagado.
+
+- `created_by` é not null pois, se um usuário apaga a conta, ocorre o soft delete, então a atribuição se mantém mesmo que o usuário já não exista mais.
+
+- `resolved_at` e `resolved_by` marcam quando e por quem um comentário foi
+resolvido. Um comentário resolvido não some, fica no histórico, mas
+fora da lista de pendentes. Parecido com o Github Issues.
+
+- `line_number` é 1-based e armazenado como `int`. Se o arquivo mudar
+depois do comentário ser criado (linhas inseridas ou removidas antes),
+o comentário "deriva" para outra linha. Isso é aceitável na primeira versão, já que
+detectar e corrigir exigiria guardar hash da linha ou offset de caractere,
+o que é complexo. O frontend fica responsável por talvez sinalizar esse tipo de alteração.
+
+- Qualquer membro com a permissão `project.comment` pode comentar, centralizando o gerenciamento de acesso.
+
