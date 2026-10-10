@@ -96,3 +96,15 @@ create table project_members (
         or expires_at > granted_at
     )
 );
+create table project_files (
+    id bigserial primary key,
+    project_id bigint not null references projects(id) on delete cascade,
+    file_path text not null,
+    file_content text not null default '',
+    is_main boolean not null default false,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    unique (project_id, file_path)
+);
+create unique index project_files_one_main_idx on project_files (project_id)
+where is_main = true;
