@@ -5,6 +5,7 @@ Enquanto eu desenvolvia o schema do banco de dados, tomei algumas decisões que 
 ## Convenções gerais
 
 - Utilizei `timestamptz` ao invés de `timestamp`. O fato do `timestamp` ser ambíguo cria incerteza em relação à fonte de verdade. Se o servidor mudar de fuso horário, falta referência para saber o significado real.
+- Todas tabelas que possuem `updated_at` devem ser atualizadas pelo backend. Não há qualquer trigger no banco para manter a simplicadade do schema.
 
 ## Identidade de usuários
 
