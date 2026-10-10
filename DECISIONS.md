@@ -31,3 +31,39 @@ diferentes não podem se misturar. Um usuário pode ser `owner` no workspace
 e `reader` em um projeto específico, sem que as permissões de um nível
 vazem para o outro. A granularidade é por projeto: todos os arquivos de
 um projeto herdam as permissões do projeto.
+
+## Workspaces
+
+O editor possui um sistema de workspaces, em que é possível compartilhar acesso com diversos usuários e dar permissões específicas para eles em diversos projetos menores.
+
+- Os convites são feitos por email, armazenados em `workspace_invitations.email`. Se o usuário existe, o convite é enviado para sua conta, se não, o convite existe até ele criar a conta.
+
+- `token` é o identificador único do convite, utilizado na url `/invite/<token>`.
+
+- `expires_at` existe para evitar que um convite vazado dê acesso eterno para um workspace.
+
+- Um dono do workspace também é membro desse workspace, então o id dele é duplicado entre `workspaces` e `workspace_members`. Mesmo que o papel de dono seja transferido depois, ainda é preservado quem criou o workspace.
+
+## Projetos
+
+Os projetos são uma coleção de arquivos, de onde podem ser criados `forks` por outros usuários.
+
+- `forked_from_id` possui a restrição `on delete set null`, isso ocorre pois o fork deve continuar existindo mesmo se o projeto inicial for deletado.
+
+- `visibility` tem 3 opções, sendo elas `workspace` (todos no workspace podem ver), `public` (todos usuários podem ver) e `private` (apenas o dono e membros convidados podem ver).
+
+- `project_members` define se um usuário pode ver um projeto, mesmo que ele esteja com `visibility` = `private`.
+
+- Projetos usam apenas `archived_at`, não deleted_at. Arquivar é reversível, e deletar é hard delete (com on delete cascade removendo arquivos, versões e dependências). Projetos são unidades grandes o suficiente para justificar hard delete quando o usuário realmente quer se livrar.
+
+## Arquivos
+
+O sistema de arquivos não cria arquivos reais no servidor. Cada arquivo é uma linha em `project_files`, com file_path como string (`/sections/intro.tex`). A hierarquia visual (a "file tree") é construída pelo frontend ao parsear o path. Não há tabela de pastas, pois elas são implícitas no campo `file_path`.
+
+- A utilização de `unique (project_id, file_path)` evita duplicatas dentro do mesmo projeto, o backend deve validar isso e retornar uma mensagem de que já existe o arquivo.
+
+- Índice parcial `project_files_one_main_idx` para evitar que a propriedade `is_main` seja verdadeira para mais de um arquivo em um projeto.
+
+- `file_content not null default '' ` evita que arquivos completamente nulos existam.
+
+- Arquivos são armazenados como texto puro no Postgres, então binários (imagens, PDFs) não são suportados no MVP.
