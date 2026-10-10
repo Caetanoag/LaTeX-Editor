@@ -108,3 +108,13 @@ create table project_files (
 );
 create unique index project_files_one_main_idx on project_files (project_id)
 where is_main = true;
+create table file_versions (
+    id bigserial primary key,
+    file_id bigint not null references project_files(id) on delete cascade,
+    version_hash text not null,
+    message text,
+    content text not null default '',
+    author_id bigint not null references users(id),
+    created_at timestamptz not null default now(),
+    unique(file_id, version_hash)
+);
