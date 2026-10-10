@@ -66,4 +66,18 @@ O sistema de arquivos não cria arquivos reais no servidor. Cada arquivo é uma 
 
 - `file_content not null default '' ` evita que arquivos completamente nulos existam.
 
-- Arquivos são armazenados como texto puro no Postgres, então binários (imagens, PDFs) não são suportados no MVP.
+- Arquivos são armazenados como texto puro no Postgres, então binários (imagens, PDFs) não são suportados.
+
+## Versionamento
+
+O sistema de versionamento consiste de uma tabela `file_versions` que deve ser atualizada a cada 10 minutos, desde que haja alguma alteração no arquivo. O frontend chama o endpoint responsável pelo versionamento. O sistema então atualiza o conteúdo do arquivo, e então cria uma nova versão representando o conteúdo alterado, com o ato de "voltar" simplesmente adicionando uma nova versão que desfaz a versão anterior.
+
+- `version_hash` deve ser gerada pelo backend, utilizando `sha256(content)`, assim criando hashes únicos por conteúdo, e evitando duplicatas.
+
+- Cada versão tem um `author_id` (quem salvou) e um `created_at` (quando).
+Juntos, formam uma linha do tempo atribuída por autor.
+
+- O campo `message` é opcional e não será preenchido na primeira versão do sistema, porém o objetivo é criar um sistema de versões nomeadas para fácil localização.
+
+- O insert em `file_versions` deve usar `on conflict (file_id, version_hash) do nothing`. Se o conteúdo não mudou desde a última versão, o hash é o mesmo
+e nada é inserido.
