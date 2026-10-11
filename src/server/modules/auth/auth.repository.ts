@@ -1,4 +1,3 @@
-import { input } from "zod/v4/mini";
 import pool from "../../db/pool";
 
 type User = {
@@ -96,4 +95,19 @@ export const deleteSession = async (tokenHash: string): Promise<void> => {
         `,
 		[tokenHash],
 	);
+};
+
+export const findUserBySessionToken = async (
+	tokenHash: string,
+): Promise<User | undefined> => {
+	const query = `
+        select u.*
+        from users u
+        join sessions s on u.id = s.user_id
+        where s.token_hash = $1
+        and u.deleted_at is null
+        and s.expires_at > now()
+    `;
+	const result = await pool.query<User>(query, [tokenHash]);
+	return result.rows[0];
 };
