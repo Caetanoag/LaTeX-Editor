@@ -81,7 +81,7 @@ export const createSession = async (input: {
 }): Promise<void> => {
 	await pool.query(
 		`
-        insert into sessions (user_id, token_hash, expires_at)
+        insert into auth_sessions (user_id, token_hash, expires_at)
         values ($1, $2, $3)
         `,
 		[input.userId, input.tokenHash, input.expiresAt],
@@ -90,7 +90,7 @@ export const createSession = async (input: {
 export const deleteSession = async (tokenHash: string): Promise<void> => {
 	await pool.query(
 		`
-        delete from sessions
+        delete from auth_sessions
         where token_hash = $1
         `,
 		[tokenHash],
@@ -103,7 +103,7 @@ export const findUserBySessionToken = async (
 	const query = `
         select u.*
         from users u
-        join sessions s on u.id = s.user_id
+        join auth_sessions s on u.id = s.user_id
         where s.token_hash = $1
         and u.deleted_at is null
         and s.expires_at > now()
@@ -117,7 +117,7 @@ export const updateSessionLastUsed = async (
 ): Promise<void> => {
 	await pool.query(
 		`
-        update sessions
+        update auth_sessions
         set last_used_at = now()
         where token_hash = $1
         and (last_used_at is null or last_used_at < now() - interval '15 minutes')
