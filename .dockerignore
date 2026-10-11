@@ -7,7 +7,7 @@ node_modules
 *.bak
 db/generated
 README.md
-DECISIONS.md
+docs/
 Dockerfile
 docker-compose.yaml
 .dockerignore
