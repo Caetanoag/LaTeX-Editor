@@ -2,7 +2,7 @@
 	"name": "LaTeX-Editor",
 	"version": "0.1.0",
 	"description": "A self-hosted, open-source LaTeX editor built with TypeScript.",
-	"main": "src/server/index.ts",
+	"main": "src/server/server.ts",
 	"repository": "https://github.com/caetanoag/LaTeX-Editor.git",
 	"author": "Caetano G.",
 	"license": "AGPL-3.0-only",
