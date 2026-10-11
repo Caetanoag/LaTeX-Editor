@@ -16,3 +16,51 @@ Editor de LaTeX self-hosted e open-source, construído com TypeScript.
 - **Runtime & Build:** Bun
 - **Sistema de Container:** Docker
 - **Banco de dados:** PostgreSQL
+
+## Configuração do Ambiente
+
+As credenciais do banco e as portas são lidas de variáveis de ambiente. Copie o arquivo de exemplo e ajuste os valores conforme necessário:
+
+```bash
+cp .env.example .env
+```
+
+As variáveis disponíveis em [`.env.example`](.env.example) são:
+
+| Variável | Padrão | Descrição |
+| --- | --- | --- |
+| `POSTGRES_USER` | `postgres` | Usuário do banco de dados. |
+| `POSTGRES_PASSWORD` | `postgres` | Senha do banco de dados. |
+| `POSTGRES_DB` | `app_db` | Nome do banco de dados. |
+| `POSTGRES_HOST` | `postgres` | Host do banco. No Docker é o nome do serviço; rodando nativamente use `localhost`. |
+| `POSTGRES_PORT` | `5432` | Porta do banco de dados. |
+| `POSTGRES_HOST_PORT` | `5439` | Porta do PostgreSQL exposta no host (apenas Docker). |
+
+## Requisitos do Sistema Host
+
+A máquina que irá servir como distribuidora do sistema tem duas opções para rodar:
+
+### Utilizando Docker 
+
+- **Requisitos:** Docker daemon instalado e rodando.
+- **Comando de inicialização:** `docker compose up -d`
+- A porta da aplicação no host pode ser alterada com a variável `APP_PORT` (padrão `3000`).
+
+### Rodando nativamente utilizando Bun
+
+- **Requisitos** Bun Runtime, PostgreSQL rodando, banco criado.
+- **Comandos de inicilização:** 
+  - `bun build ./src/client/main.ts --outfile ./public/bundle.js --target browser` (Constrói o frontend)
+  - `bun run src/server/server.ts` (Inicia o backend)
+
+> O sistema não configura o PostgreSQL, quem roda local fica responsável por isso.
+
+
+Ao final, o esperado é que o serviço esteja rodando na porta 3000 da máquina do usuário, ou onde ele foi configurado
+
+## Documentação
+
+- [Decisões de arquitetura do banco de dados](docs/database/SCHEMA.md)
+- [Consultas de referência do banco de dados](docs/database/QUERIES.md)
+- Diagrama do schema: [`db/generated/diagram.png`](db/generated/diagram.png)
+- Schema em DBML: [`db/generated/schema.dbml`](db/generated/schema.dbml)
