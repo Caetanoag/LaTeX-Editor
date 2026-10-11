@@ -35,3 +35,41 @@ export const findUserById = (id: number) => findUserBy("id", id);
 export const findUserByEmail = (email: string) => findUserBy("email", email);
 export const findUserByUsername = (username: string) =>
 	findUserBy("username", username);
+
+export const createUser = async (input: {
+	username: string;
+	email: string;
+	passwordHash: string;
+}): Promise<User> => {
+	const client = await pool.connect();
+	try {
+		await client.query("begin");
+
+		const userResult = await client.query<User>(
+			`
+      insert into users (username, email, password_hash)
+      values ($1, $2, $3)
+      returning ${USER_COLUMNS}
+      `,
+			[input.username, input.email, input.passwordHash],
+		);
+
+		const user = userResult.rows[0];
+
+		await client.query(
+			`
+      insert into user_profiles (user_id, display_name)
+      values ($1, $2)
+      `,
+			[user.id, input.username],
+		);
+
+		await client.query("commit");
+		return user;
+	} catch (err) {
+		await client.query("rollback");
+		throw err;
+	} finally {
+		client.release();
+	}
+};
