@@ -143,3 +143,12 @@ create table comments (
         or resolved_at >= created_at
     )
 );
+create table sessions (
+    id bigserial primary key,
+    user_id bigint not null references users(id),
+    token_hash text not null unique,
+    created_at timestamptz not null default now(),
+    expires_at timestamptz not null,
+    last_used_at timestamptz,
+    check(expires_at > created_at)
+);
