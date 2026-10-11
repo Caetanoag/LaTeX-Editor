@@ -111,3 +111,27 @@ export const findUserBySessionToken = async (
 	const result = await pool.query<User>(query, [tokenHash]);
 	return result.rows[0];
 };
+
+export const updateSessionLastUsed = async (
+	tokenHash: string,
+): Promise<void> => {
+	await pool.query(
+		`
+        update sessions
+        set last_used_at = now()
+        where token_hash = $1
+        and (last_used_at is null or last_used_at < now() - interval '15 minutes')
+        `,
+		[tokenHash],
+	);
+};
+export const updateUserLastLogin = async (userId: number): Promise<void> => {
+	await pool.query(
+		`
+        update users
+        set last_login_at = now()
+        where id = $1
+        `,
+		[userId],
+	);
+};
