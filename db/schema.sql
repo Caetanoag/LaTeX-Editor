@@ -143,7 +143,7 @@ create table comments (
         or resolved_at >= created_at
     )
 );
-create table sessions (
+create table auth_sessions (
     id bigserial primary key,
     user_id bigint not null references users(id),
     token_hash text not null unique,
