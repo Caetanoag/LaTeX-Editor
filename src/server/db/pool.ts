@@ -15,8 +15,4 @@ pool.on("error", (err) => {
 process.on("SIGTERM", () => pool.end());
 process.on("SIGINT", () => pool.end());
 
-export const query = (text: string, params?: unknown[]) => {
-	return pool.query(text, params);
-};
-
 export default pool;
