@@ -5,7 +5,7 @@
 	"main": "src/server/index.ts",
 	"repository": "https://github.com/caetanoag/LaTeX-Editor.git",
 	"author": "Caetano G.",
-	"license": "MIT",
+	"license": "AGPL-3.0-only",
 	"scripts": {
 		"build:client": "bun build ./src/client/main.ts --outfile ./public/bundle.js --target browser",
 		"dev": "bun --watch src/server/server.ts",
