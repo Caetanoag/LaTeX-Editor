@@ -1,3 +1,4 @@
+import { input } from "zod/v4/mini";
 import pool from "../../db/pool";
 
 type User = {
@@ -72,4 +73,27 @@ export const createUser = async (input: {
 	} finally {
 		client.release();
 	}
+};
+
+export const createSession = async (input: {
+	userId: number;
+	tokenHash: string;
+	expiresAt: Date;
+}): Promise<void> => {
+	await pool.query(
+		`
+        insert into sessions (user_id, token_hash, expires_at)
+        values ($1, $2, $3)
+        `,
+		[input.userId, input.tokenHash, input.expiresAt],
+	);
+};
+export const deleteSession = async (tokenHash: string): Promise<void> => {
+	await pool.query(
+		`
+        delete from sessions
+        where token_hash = $1
+        `,
+		[tokenHash],
+	);
 };
