@@ -1,10 +1,12 @@
 import { ForbiddenError, NotFoundError } from "../../lib/errors";
 import {
+	createWorkspace as createWorkspaceRepo,
 	findMemberRole,
 	findWorkspaceById,
 	findWorkspaceByUrlIdentifier,
 	type Workspace,
 } from "./workspaces.repository";
+import type { CreateWorkspaceInput } from "./workspaces.schemas";
 
 const slugify = (name: string): string => {
 	const slug = name
@@ -64,4 +66,18 @@ const ensureRole = async (
 	}
 
 	return workspace;
+};
+
+export const createWorkspace = async (
+	input: CreateWorkspaceInput,
+	userId: number,
+): Promise<Workspace> => {
+	const url = await generateUniqueUrlIdentifier(input.name);
+
+	return createWorkspaceRepo({
+		name: input.name,
+		urlIdentifier: url,
+		description: input.description,
+		ownerId: userId,
+	});
 };
