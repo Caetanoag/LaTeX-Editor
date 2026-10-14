@@ -81,7 +81,22 @@ export const findWorkspaceByUrlIdentifier = async (
 	);
 	return result.rows[0] as Workspace | undefined;
 };
-
+export const findMemberRole = async (
+	workspaceId: number,
+	userId: number,
+): Promise<string | undefined> => {
+	const result = await pool.query<{ role: string }>(
+		`
+    select r.name as role
+    from workspace_members wm
+    join roles r on r.id = wm.role_id
+    where wm.workspace_id = $1
+      and wm.user_id = $2
+    `,
+		[workspaceId, userId],
+	);
+	return result.rows[0]?.role;
+};
 export type WorkspaceWithRole = Workspace & { role: string };
 
 export const listWorkspacesForUser = async (
