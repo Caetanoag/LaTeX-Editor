@@ -5,10 +5,14 @@ import {
 	findWorkspaceById,
 	findWorkspaceByUrlIdentifier,
 	listWorkspacesForUser,
+	updateWorkspace as updatedWorkspaceRepo,
 	type Workspace,
 	type WorkspaceWithRole,
 } from "./workspaces.repository";
-import type { CreateWorkspaceInput } from "./workspaces.schemas";
+import type {
+	CreateWorkspaceInput,
+	UpdateWorkspaceInput,
+} from "./workspaces.schemas";
 
 const slugify = (name: string): string => {
 	const slug = name
@@ -96,4 +100,22 @@ export const getWorkspace = async (
 ): Promise<WorkspaceWithRole> => {
 	const { workspace, role } = await ensureMembership(workspaceId, userId);
 	return { ...workspace, role };
+};
+
+export const updateWorkspace = async (
+	workspaceId: number,
+	userId: number,
+	input: UpdateWorkspaceInput,
+): Promise<Workspace> => {
+	await ensureRole(workspaceId, userId, ["owner", "admin"]);
+
+	const updated = await updatedWorkspaceRepo(workspaceId, {
+		name: input.name,
+		description: input.description,
+	});
+
+	if (!updated) {
+		throw new NotFoundError(`Workspace with id ${workspaceId} not found`);
+	}
+	return updated;
 };
