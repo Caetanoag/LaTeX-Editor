@@ -1,5 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import express from "express";
+import { errorHandler } from "./middleware/error-handler";
+import { authRouter } from "./modules/auth/auth.index";
 export const app = express();
 app.use(express.json());
 
@@ -12,4 +14,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 	}
 	next();
 });
+
+app.use("/auth", authRouter);
+
+app.use(errorHandler);
 export default app;
