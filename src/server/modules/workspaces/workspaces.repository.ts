@@ -66,7 +66,7 @@ export const findWorkspaceById = async (
 	id: number,
 ): Promise<Workspace | null> => {
 	const result = await pool.query<Workspace>(
-		`select ${WORKSPACE_COLUMNS} from workspaces where id = $1`,
+		`select ${WORKSPACE_COLUMNS} from workspaces where id = $1 and deleted_at is null`,
 		[id],
 	);
 	return result.rows[0] as Workspace | null;
@@ -76,7 +76,7 @@ export const findWorkspaceByUrlIdentifier = async (
 	urlIdentifier: string,
 ): Promise<Workspace | null> => {
 	const result = await pool.query<Workspace>(
-		`select ${WORKSPACE_COLUMNS} from workspaces where url_identifier = $1`,
+		`select ${WORKSPACE_COLUMNS} from workspaces where url_identifier = $1 and deleted_at is null`,
 		[urlIdentifier],
 	);
 	return result.rows[0] as Workspace | null;
@@ -95,7 +95,7 @@ export const listWorkspacesForUser = async (
             from workspaces w
             join workspace_members wm on w.id = wm.workspace_id
             join roles r on wm.role_id = r.id
-            where wm.user_id = $1
+            where wm.user_id = $1 and w.deleted_at is null
         `,
 		[userId],
 	);
