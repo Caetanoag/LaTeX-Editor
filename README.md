@@ -35,6 +35,7 @@ As variáveis disponíveis em [`.env.example`](.env.example) são:
 | `POSTGRES_HOST` | `postgres` | Host do banco. No Docker é o nome do serviço; rodando nativamente use `localhost`. |
 | `POSTGRES_PORT` | `5432` | Porta do banco de dados. |
 | `POSTGRES_HOST_PORT` | `5439` | Porta do PostgreSQL exposta no host (apenas Docker). |
+| `SESSION_TTL_DAYS` | `30` | Tempo de vida das sessões de autenticação, em dias. |
 
 ## Requisitos do Sistema Host
 
