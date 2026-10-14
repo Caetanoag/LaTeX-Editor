@@ -1,4 +1,3 @@
-import e from "express";
 import { ForbiddenError, NotFoundError } from "../../lib/errors";
 import {
 	createWorkspace as createWorkspaceRepo,
