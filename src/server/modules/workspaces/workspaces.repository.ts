@@ -19,8 +19,8 @@ const WORKSPACE_COLUMNS = `
 const getRoleId = async (
 	scope: "workspace" | "project",
 	name: string,
-): Promise<number> => {
-	const result = await pool.query(
+): Promise<number | undefined> => {
+	const result = await pool.query<{ id: number }>(
 		`
            select id from roles where scope = $1 and name = $2
         `,
@@ -64,22 +64,22 @@ export const createWorkspace = async (input: {
 
 export const findWorkspaceById = async (
 	id: number,
-): Promise<Workspace | null> => {
+): Promise<Workspace | undefined> => {
 	const result = await pool.query<Workspace>(
 		`select ${WORKSPACE_COLUMNS} from workspaces where id = $1 and deleted_at is null`,
 		[id],
 	);
-	return result.rows[0] as Workspace | null;
+	return result.rows[0] as Workspace | undefined;
 };
 
 export const findWorkspaceByUrlIdentifier = async (
 	urlIdentifier: string,
-): Promise<Workspace | null> => {
+): Promise<Workspace | undefined> => {
 	const result = await pool.query<Workspace>(
 		`select ${WORKSPACE_COLUMNS} from workspaces where url_identifier = $1 and deleted_at is null`,
 		[urlIdentifier],
 	);
-	return result.rows[0] as Workspace | null;
+	return result.rows[0] as Workspace | undefined;
 };
 
 export type WorkspaceWithRole = Workspace & { role: string };
@@ -119,7 +119,7 @@ export const updateWorkspace = async (
 		values.push(input.description);
 	}
 	if (fields.length === 0) {
-		return (await findWorkspaceById(id)) as Workspace;
+		return (await findWorkspaceById(id)) ?? undefined;
 	}
 	fields.push(`updated_at = now()`);
 	values.push(id);
