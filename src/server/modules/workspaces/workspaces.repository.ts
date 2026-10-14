@@ -139,3 +139,15 @@ export const updateWorkspace = async (
 	}
 	return result.rows[0];
 };
+
+export const deleteWorkspace = async (id: number): Promise<void> => {
+	await pool.query(
+		`
+            update workspaces
+            set deleted_at = now(), updated_at = now()
+            where id = $1
+                and delted_at is null
+        `,
+		[id],
+	);
+};
