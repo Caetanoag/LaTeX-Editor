@@ -61,3 +61,19 @@ export const createWorkspace = async (input: {
 		client.release();
 	}
 };
+
+export const findWorkspaceById = async (id: number): Promise<Workspace | null> => {
+    const result = await pool.query(
+        `select ${WORKSPACE_COLUMNS} from workspaces where id = $1`,
+        [id]
+    );
+    return result.rows[0] as Workspace | null;
+};
+
+export const findWorkspaceByUrlIdentifier = async (urlIdentifier: string): Promise<Workspace | null> => {
+    const result = await pool.query(
+        `select ${WORKSPACE_COLUMNS} from workspaces where url_identifier = $1`,
+        [urlIdentifier]
+    );
+    return result.rows[0] as Workspace | null;
+};
