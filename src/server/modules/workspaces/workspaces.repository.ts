@@ -31,7 +31,7 @@ const getRoleId = async (
 export const createWorkspace = async (input: {
 	name: string;
 	urlIdentifier: string;
-	description?: string;
+	description?: string | null;
 	ownerId: number;
 }): Promise<Workspace> => {
 	const roleId = await getRoleId("workspace", "owner");
