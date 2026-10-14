@@ -18,9 +18,7 @@ const slugify = (name: string): string => {
 	return slug || "workspace";
 };
 
-export const generateUniqueUrlIdentifier = async (
-	name: string,
-): Promise<string> => {
+const generateUniqueUrlIdentifier = async (name: string): Promise<string> => {
 	const baseSlug = slugify(name);
 
 	let candidate = baseSlug;
@@ -34,8 +32,7 @@ export const generateUniqueUrlIdentifier = async (
 	}
 	return candidate;
 };
-
-export const ensureMembership = async (
+const ensureMembership = async (
 	workspaceId: number,
 	userId: number,
 ): Promise<{ workspace: Workspace; role: string }> => {
