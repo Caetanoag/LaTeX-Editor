@@ -63,7 +63,7 @@ export const createWorkspace = async (input: {
 };
 
 export const findWorkspaceById = async (id: number): Promise<Workspace | null> => {
-    const result = await pool.query(
+    const result = await pool.query<Workspace>(
         `select ${WORKSPACE_COLUMNS} from workspaces where id = $1`,
         [id]
     );
@@ -71,9 +71,25 @@ export const findWorkspaceById = async (id: number): Promise<Workspace | null> =
 };
 
 export const findWorkspaceByUrlIdentifier = async (urlIdentifier: string): Promise<Workspace | null> => {
-    const result = await pool.query(
+    const result = await pool.query<Workspace>(
         `select ${WORKSPACE_COLUMNS} from workspaces where url_identifier = $1`,
         [urlIdentifier]
     );
     return result.rows[0] as Workspace | null;
+};
+
+export type WorkspaceWithRole = Workspace & { role: string };
+
+export const listWorkspacesForUser = async (userId: number): Promise<WorkspaceWithRole[]> => {
+    const result = await pool.query<WorkspaceWithRole>(
+        `
+            select ${WORKSPACE_COLUMNS.split(",").map(c => `w.${c.trim()}`).join(", ")}, r.name as role
+            from workspaces w
+            join workspace_members wm on w.id = wm.workspace_id
+            join roles r on wm.role_id = r.id
+            where wm.user_id = $1
+        `,
+        [userId]
+    );
+    return result.rows as WorkspaceWithRole[];
 };
