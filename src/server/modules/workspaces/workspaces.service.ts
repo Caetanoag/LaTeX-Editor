@@ -1,6 +1,8 @@
+import e from "express";
 import { ForbiddenError, NotFoundError } from "../../lib/errors";
 import {
 	createWorkspace as createWorkspaceRepo,
+	deleteWorkspace as deleteWorkspaceRepo,
 	findMemberRole,
 	findWorkspaceById,
 	findWorkspaceByUrlIdentifier,
@@ -118,4 +120,11 @@ export const updateWorkspace = async (
 		throw new NotFoundError(`Workspace with id ${workspaceId} not found`);
 	}
 	return updated;
+};
+export const deleteWorkspace = async (
+	workspaceId: number,
+	userId: number,
+): Promise<void> => {
+	await ensureRole(workspaceId, userId, ["owner"]);
+	await deleteWorkspaceRepo(workspaceId);
 };
