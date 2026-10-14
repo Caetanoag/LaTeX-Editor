@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
-import { AuthError, getCurrentUser } from "../modules/auth/auth.service";
+import { UnauthorizedError } from "../lib/errors";
+import { getCurrentUser } from "../modules/auth/auth.service";
 
 const BEARER_PREFIX = "Bearer ";
 
@@ -11,12 +12,6 @@ export const getBearerToken = (req: Request): string | undefined => {
 	return token.length > 0 ? token : undefined;
 };
 
-class MissingTokenError extends AuthError {
-	constructor() {
-		super("Authentication token is required", 401, "missing_token");
-	}
-}
-
 export const requireAuth = async (
 	req: Request,
 	_res: Response,
@@ -24,7 +19,7 @@ export const requireAuth = async (
 ): Promise<void> => {
 	const token = getBearerToken(req);
 	if (!token) {
-		next(new MissingTokenError());
+		next(new UnauthorizedError("Authentication token is required"));
 		return;
 	}
 

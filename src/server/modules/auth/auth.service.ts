@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { password } from "bun";
+import { AppError } from "../../lib/errors";
 import {
 	createSession,
 	createUser,
@@ -33,17 +34,7 @@ export type AuthResult = {
 	user: PublicUser;
 	session: Session;
 };
-export class AuthError extends Error {
-	readonly status: number;
-	readonly code: string;
-
-	constructor(message: string, status: number, code: string) {
-		super(message);
-		this.name = new.target.name;
-		this.status = status;
-		this.code = code;
-	}
-}
+export class AuthError extends AppError {}
 
 export class EmailAlreadyInUseError extends AuthError {
 	constructor() {
