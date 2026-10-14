@@ -49,3 +49,19 @@ const ensureMembership = async (
 	}
 	return { workspace, role };
 };
+
+const ensureRole = async (
+	workspaceId: number,
+	userId: number,
+	allowedRoles: string[],
+): Promise<Workspace> => {
+	const { workspace, role } = await ensureMembership(workspaceId, userId);
+
+	if (!allowedRoles.includes(role)) {
+		throw new ForbiddenError(
+			`This action requires one of: ${allowedRoles.join(", ")}`,
+		);
+	}
+
+	return workspace;
+};
