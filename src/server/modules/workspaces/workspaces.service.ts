@@ -1,4 +1,10 @@
-import { findWorkspaceByUrlIdentifier } from "./workspaces.repository";
+import { ForbiddenError, NotFoundError } from "../../lib/errors";
+import {
+	findMemberRole,
+	findWorkspaceById,
+	findWorkspaceByUrlIdentifier,
+	type Workspace,
+} from "./workspaces.repository";
 
 const slugify = (name: string): string => {
 	const slug = name
@@ -12,7 +18,9 @@ const slugify = (name: string): string => {
 	return slug || "workspace";
 };
 
-const generateUniqueUrlIdentifier = async (name: string): Promise<string> => {
+export const generateUniqueUrlIdentifier = async (
+	name: string,
+): Promise<string> => {
 	const baseSlug = slugify(name);
 
 	let candidate = baseSlug;
@@ -25,4 +33,22 @@ const generateUniqueUrlIdentifier = async (name: string): Promise<string> => {
 		}
 	}
 	return candidate;
+};
+
+export const ensureMembership = async (
+	workspaceId: number,
+	userId: number,
+): Promise<{ workspace: Workspace; role: string }> => {
+	const workspace = await findWorkspaceById(workspaceId);
+	if (!workspace) {
+		throw new NotFoundError(`Workspace with id ${workspaceId} not found`);
+	}
+
+	const role = await findMemberRole(workspaceId, userId);
+	if (!role) {
+		throw new ForbiddenError(
+			`User with id ${userId} is not a member of workspace with id ${workspaceId}`,
+		);
+	}
+	return { workspace, role };
 };
