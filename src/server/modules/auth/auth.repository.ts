@@ -10,13 +10,11 @@ export type User = {
 	updated_at: Date;
 	deleted_at: Date | null;
 };
-export type SafeUser = Omit<User, "password_hash">;
-export const toSafeUser = (user: User): SafeUser => {
-	const { password_hash, ...safe } = user;
-	return safe;
-};
 const USER_COLUMNS =
 	"id, username, email, password_hash, created_at, updated_at, deleted_at, last_login_at";
+const USER_COLUMNS_BY_ALIAS = USER_COLUMNS.split(", ")
+	.map((column) => `u.${column}`)
+	.join(", ");
 const COLUMN_MAP = {
 	id: "id",
 	username: "username",
@@ -106,7 +104,7 @@ export const findUserBySessionToken = async (
 	tokenHash: string,
 ): Promise<User | undefined> => {
 	const query = `
-        select u.*
+        select ${USER_COLUMNS_BY_ALIAS}
         from users u
         join auth_sessions s on u.id = s.user_id
         where s.token_hash = $1
