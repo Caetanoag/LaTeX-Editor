@@ -5,9 +5,9 @@ import {
 	createUser,
 	deleteSession,
 	findUserByEmail,
-	type findUserById,
 	findUserBySessionToken,
 	findUserByUsername,
+	type User,
 	updateSessionLastUsed,
 	updateUserLastLogin,
 } from "./auth.repository";
@@ -15,8 +15,6 @@ import type { LoginInput, RegisterInput } from "./auth.schemas";
 
 const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS ?? 30);
 const SESSION_TTL_MS = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
-
-type UserRow = NonNullable<Awaited<ReturnType<typeof findUserById>>>;
 
 export type PublicUser = {
 	id: number;
@@ -71,7 +69,7 @@ export class InvalidSessionError extends AuthError {
 	}
 }
 
-const toPublicUser = (user: UserRow): PublicUser => ({
+const toPublicUser = (user: User): PublicUser => ({
 	id: user.id,
 	username: user.username,
 	email: user.email,
@@ -124,7 +122,7 @@ export const register = async (input: RegisterInput): Promise<AuthResult> => {
 
 	const passwordHash = await hashPassword(input.password);
 
-	let user: UserRow;
+	let user: User;
 	try {
 		user = await createUser({
 			username: input.username,
