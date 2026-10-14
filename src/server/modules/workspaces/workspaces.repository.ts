@@ -32,7 +32,7 @@ export const createWorkspace = async (input: {
 	name: string;
 	urlIdentifier: string;
 	description?: string;
-	owenerId: number;
+	ownerId: number;
 }): Promise<Workspace> => {
 	const roleId = await getRoleId("workspace", "owner");
 	if (!roleId) throw new Error("Role 'onwner' not found for scope 'workspace'");
@@ -45,12 +45,12 @@ export const createWorkspace = async (input: {
                 values ($1, $2, $3, $4)
                 returning ${WORKSPACE_COLUMNS}
             `,
-			[input.name, input.urlIdentifier, input.description, input.owenerId],
+			[input.name, input.urlIdentifier, input.description, input.ownerId],
 		);
 		const workspace = result.rows[0] as Workspace;
 		await client.query(
 			"insert into workspace_members (workspace_id, user_id, role_id) values ($1, $2, $3)",
-			[workspace.id, input.owenerId, roleId],
+			[workspace.id, input.ownerId, roleId],
 		);
 		await client.query("commit");
 		return workspace;
