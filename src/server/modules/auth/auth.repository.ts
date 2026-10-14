@@ -1,6 +1,6 @@
 import pool from "../../db/pool";
 
-type User = {
+export type User = {
 	id: number;
 	username: string;
 	email: string;
@@ -9,6 +9,11 @@ type User = {
 	last_login_at: Date | null;
 	updated_at: Date;
 	deleted_at: Date | null;
+};
+export type SafeUser = Omit<User, "password_hash">;
+export const toSafeUser = (user: User): SafeUser => {
+	const { password_hash, ...safe } = user;
+	return safe;
 };
 const USER_COLUMNS =
 	"id, username, email, password_hash, created_at, updated_at, deleted_at, last_login_at";
@@ -134,4 +139,30 @@ export const updateUserLastLogin = async (userId: number): Promise<void> => {
         `,
 		[userId],
 	);
+};
+export const cleanExpiredSessions = async (
+	batchSize = 1000,
+): Promise<number> => {
+	let totalDeleted = 0;
+
+	while (true) {
+		const result = await pool.query(
+			`
+      delete from auth_sessions
+      where id in (
+        select id from auth_sessions
+        where expires_at < now()
+        limit $1
+      )
+      `,
+			[batchSize],
+		);
+
+		const deleted = result.rowCount ?? 0;
+		totalDeleted += deleted;
+
+		if (deleted < batchSize) break;
+	}
+
+	return totalDeleted;
 };
