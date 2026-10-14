@@ -71,3 +71,102 @@ export class InvalidSessionError extends AuthError {
 	}
 }
 
+const toPublicUser = (user: UserRow): PublicUser => ({
+	id: user.id,
+	username: user.username,
+	email: user.email,
+	created_at: user.created_at,
+	last_login_at: user.last_login_at,
+});
+
+const hashPassword = (plain: string): Promise<string> =>
+	password.hash(plain, { algorithm: "argon2id" });
+
+const verifyPassword = (plain: string, hash: string): Promise<boolean> =>
+	password.verify(plain, hash);
+
+const generateSessionToken = (): string => crypto.randomUUID();
+
+const hashSessionToken = (token: string): string =>
+	createHash("sha256").update(token).digest("hex");
+
+const startSession = async (userId: number): Promise<Session> => {
+	const token = generateSessionToken();
+	const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+
+	await createSession({
+		userId,
+		tokenHash: hashSessionToken(token),
+		expiresAt,
+	});
+
+	return { token, expiresAt };
+};
+
+type PgError = { code?: string; constraint?: string };
+
+const isUniqueViolation = (err: unknown): err is PgError =>
+	typeof err === "object" && err !== null && (err as PgError).code === "23505";
+
+const uniqueViolationToAuthError = (err: PgError): AuthError =>
+	err.constraint?.includes("username")
+		? new UsernameAlreadyInUseError()
+		: new EmailAlreadyInUseError();
+
+export const register = async (input: RegisterInput): Promise<AuthResult> => {
+	const [existingEmail, existingUsername] = await Promise.all([
+		findUserByEmail(input.email),
+		findUserByUsername(input.username),
+	]);
+
+	if (existingEmail) throw new EmailAlreadyInUseError();
+	if (existingUsername) throw new UsernameAlreadyInUseError();
+
+	const passwordHash = await hashPassword(input.password);
+
+	let user: UserRow;
+	try {
+		user = await createUser({
+			username: input.username,
+			email: input.email,
+			passwordHash,
+		});
+	} catch (err) {
+		if (isUniqueViolation(err)) throw uniqueViolationToAuthError(err);
+		throw err;
+	}
+
+	const session = await startSession(user.id);
+	return { user: toPublicUser(user), session };
+};
+
+export const login = async (input: LoginInput): Promise<AuthResult> => {
+	const user = await findUserByEmail(input.email);
+
+	if (!user) throw new InvalidCredentialsError();
+
+	const passwordMatches = await verifyPassword(
+		input.password,
+		user.password_hash,
+	);
+	if (!passwordMatches) throw new InvalidCredentialsError();
+
+	await updateUserLastLogin(user.id);
+
+	const session = await startSession(user.id);
+	return { user: toPublicUser(user), session };
+};
+
+export const logout = async (token: string): Promise<void> => {
+	await deleteSession(hashSessionToken(token));
+};
+
+export const getCurrentUser = async (token: string): Promise<PublicUser> => {
+	const tokenHash = hashSessionToken(token);
+
+	const user = await findUserBySessionToken(tokenHash);
+	if (!user) throw new InvalidSessionError();
+
+	await updateSessionLastUsed(tokenHash);
+	return toPublicUser(user);
+};
