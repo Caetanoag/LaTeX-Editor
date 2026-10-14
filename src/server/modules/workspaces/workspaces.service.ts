@@ -4,7 +4,9 @@ import {
 	findMemberRole,
 	findWorkspaceById,
 	findWorkspaceByUrlIdentifier,
+	listWorkspacesForUser,
 	type Workspace,
+	type WorkspaceWithRole,
 } from "./workspaces.repository";
 import type { CreateWorkspaceInput } from "./workspaces.schemas";
 
@@ -80,4 +82,10 @@ export const createWorkspace = async (
 		description: input.description,
 		ownerId: userId,
 	});
+};
+
+export const listWorkspaces = async (
+	userId: number,
+): Promise<WorkspaceWithRole[]> => {
+	return listWorkspacesForUser(userId);
 };
