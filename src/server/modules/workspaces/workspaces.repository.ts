@@ -62,34 +62,80 @@ export const createWorkspace = async (input: {
 	}
 };
 
-export const findWorkspaceById = async (id: number): Promise<Workspace | null> => {
-    const result = await pool.query<Workspace>(
-        `select ${WORKSPACE_COLUMNS} from workspaces where id = $1`,
-        [id]
-    );
-    return result.rows[0] as Workspace | null;
+export const findWorkspaceById = async (
+	id: number,
+): Promise<Workspace | null> => {
+	const result = await pool.query<Workspace>(
+		`select ${WORKSPACE_COLUMNS} from workspaces where id = $1`,
+		[id],
+	);
+	return result.rows[0] as Workspace | null;
 };
 
-export const findWorkspaceByUrlIdentifier = async (urlIdentifier: string): Promise<Workspace | null> => {
-    const result = await pool.query<Workspace>(
-        `select ${WORKSPACE_COLUMNS} from workspaces where url_identifier = $1`,
-        [urlIdentifier]
-    );
-    return result.rows[0] as Workspace | null;
+export const findWorkspaceByUrlIdentifier = async (
+	urlIdentifier: string,
+): Promise<Workspace | null> => {
+	const result = await pool.query<Workspace>(
+		`select ${WORKSPACE_COLUMNS} from workspaces where url_identifier = $1`,
+		[urlIdentifier],
+	);
+	return result.rows[0] as Workspace | null;
 };
 
 export type WorkspaceWithRole = Workspace & { role: string };
 
-export const listWorkspacesForUser = async (userId: number): Promise<WorkspaceWithRole[]> => {
-    const result = await pool.query<WorkspaceWithRole>(
-        `
-            select ${WORKSPACE_COLUMNS.split(",").map(c => `w.${c.trim()}`).join(", ")}, r.name as role
+export const listWorkspacesForUser = async (
+	userId: number,
+): Promise<WorkspaceWithRole[]> => {
+	const result = await pool.query<WorkspaceWithRole>(
+		`
+            select ${WORKSPACE_COLUMNS.split(",")
+							.map((c) => `w.${c.trim()}`)
+							.join(", ")}, r.name as role
             from workspaces w
             join workspace_members wm on w.id = wm.workspace_id
             join roles r on wm.role_id = r.id
             where wm.user_id = $1
         `,
-        [userId]
-    );
-    return result.rows as WorkspaceWithRole[];
+		[userId],
+	);
+	return result.rows as WorkspaceWithRole[];
+};
+
+export const updateWorkspace = async (
+	id: number,
+	input: { name?: string; description?: string | null },
+): Promise<Workspace | undefined> => {
+	const fields: string[] = [];
+	const values: (number | string | null)[] = [];
+	let index = 1;
+
+	if (input.name !== undefined) {
+		fields.push(`name = $${index++}`);
+		values.push(input.name);
+	}
+	if (input.description !== undefined) {
+		fields.push(`description = $${index++}`);
+		values.push(input.description);
+	}
+	if (fields.length === 0) {
+		return (await findWorkspaceById(id)) as Workspace;
+	}
+	fields.push(`updated_at = now()`);
+	values.push(id);
+
+	const result = await pool.query(
+		`
+            update workspaces
+            set ${fields.join(", ")}
+            where id = $${index}
+            and deleted_at is null
+            returning ${WORKSPACE_COLUMNS}
+        `,
+		values,
+	);
+	if (!result.rows[0]) {
+		throw new Error("Workspace does not exist or is deleted");
+	}
+	return result.rows[0];
 };
