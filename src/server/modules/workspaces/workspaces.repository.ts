@@ -35,7 +35,7 @@ export const createWorkspace = async (input: {
 	ownerId: number;
 }): Promise<Workspace> => {
 	const roleId = await getRoleId("workspace", "owner");
-	if (!roleId) throw new Error("Role 'onwner' not found for scope 'workspace'");
+	if (!roleId) throw new Error("Role 'owner' not found for scope 'workspace'");
 	const client = await pool.connect();
 	try {
 		await client.query("begin");
@@ -146,7 +146,7 @@ export const deleteWorkspace = async (id: number): Promise<void> => {
             update workspaces
             set deleted_at = now(), updated_at = now()
             where id = $1
-                and delted_at is null
+                and deleted_at is null
         `,
 		[id],
 	);
