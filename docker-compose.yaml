@@ -28,6 +28,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-app_db}
       PORT: 3000
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-30}
     ports:
       - "${APP_PORT:-3000}:3000"
     depends_on:
