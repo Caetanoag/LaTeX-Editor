@@ -89,3 +89,11 @@ export const listWorkspaces = async (
 ): Promise<WorkspaceWithRole[]> => {
 	return listWorkspacesForUser(userId);
 };
+
+export const getWorkspace = async (
+	workspaceId: number,
+	userId: number,
+): Promise<WorkspaceWithRole> => {
+	const { workspace, role } = await ensureMembership(workspaceId, userId);
+	return { ...workspace, role };
+};
