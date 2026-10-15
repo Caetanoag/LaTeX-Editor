@@ -12,3 +12,7 @@ export type Project = {
 	updated_at: Date;
 	archived_at: Date | null;
 };
+const PROJECT_COLUMNS = `
+  id, workspace_id, owner_id, title, description, visibility,
+  forked_from_id, created_at, updated_at, archived_at
+`;
