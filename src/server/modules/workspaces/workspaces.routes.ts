@@ -1,4 +1,5 @@
 import { type Request, type Response, Router } from "express";
+import { requireAuth } from "../../middleware/require-auth";
 import {
 	createWorkspaceSchema,
 	updateWorkspaceSchema,
@@ -12,7 +13,7 @@ import {
 } from "./workspaces.service";
 
 const router: Router = Router();
-
+router.use(requireAuth);
 router.post("/", async (req: Request, res: Response) => {
 	const input = createWorkspaceSchema.parse(req.body);
 	const workspace = await createWorkspace(input, req.user!.id);
