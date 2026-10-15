@@ -34,3 +34,56 @@ export const findProjectMemberRole = async (
 	);
 	return result.rows[0]?.role;
 };
+
+export const createProject = async (input: {
+	workspaceId: number;
+	ownerId: number;
+	title: string;
+	description: string | null;
+	visibility: ProjectVisibility;
+}): Promise<Project> => {
+	const ownerRole = await pool.query<{ id: number }>(
+		`
+            select id from roles where scope = 'project' and name = 'owner',
+        `,
+	);
+	const ownerRoleId = ownerRole.rows[0]?.id;
+
+	if (!ownerRoleId) throw new Error("Role owner (project) not found");
+
+	const client = await pool.connect();
+	try {
+		await client.query("begin");
+		const projectResult = await client.query<Project>(
+			`
+                insert into projects (workspace_id, owner_id, title, description, visiblity)
+                values ($1, $2, $3, $4, $5)
+                returning ${PROJECT_COLUMNS}
+            `,
+			[
+				input.workspaceId,
+				input.ownerId,
+				input.title,
+				input.description,
+				input.visibility,
+			],
+		);
+		const project = projectResult.rows[0];
+
+		await client.query(
+			`
+            insert into project_members (project_id, user_id, role_id, granted_by)
+            values ($1, $2, $3, $4)
+            `,
+
+			[project.id, input.ownerId, ownerRoleId, input.ownerId],
+		);
+		await client.query("commit");
+		return project;
+	} catch (error) {
+		await client.query("rollback");
+		throw error;
+	} finally {
+		client.release();
+	}
+};
