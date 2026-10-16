@@ -22,7 +22,7 @@ const FILE_META_COLUMNS = `
 
 export const createFile = async (input: {
 	projectId: number;
-	filePath: number;
+	filePath: string;
 	fileContent: string;
 	isMain: boolean;
 }): Promise<ProjectFile> => {
@@ -39,8 +39,8 @@ export const createFile = async (input: {
 
 export const listProjectFiles = async (
 	projectId: number,
-): Promise<ProjectFile[]> => {
-	const result = await pool.query<ProjectFile>(
+): Promise<ProjectFileMeta[]> => {
+	const result = await pool.query<ProjectFileMeta>(
 		`
 			select ${FILE_META_COLUMNS} from project_files
 			where project_id = $1
@@ -148,5 +148,5 @@ export const setMainFile = async (
 };
 
 export const deleteFile = async (id: number): Promise<void> => {
-	await pool.query("delete from file_projects where id = $1", [id]);
+	await pool.query("delete from project_files where id = $1", [id]);
 };
