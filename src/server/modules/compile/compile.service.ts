@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { ProjectFile } from "../files/files.repository";
@@ -25,4 +26,41 @@ const writeFilesToDir = async (
 		await mkdir(dirname(absPath), { recursive: true });
 		await writeFile(absPath, file.file_content, "utf-8");
 	}
+};
+
+const runLatexmk = (cwd: string, mainFile: string): Promise<LatexmkResult> => {
+	return new Promise((resolve) => {
+		execFile(
+			"latexmk",
+			[
+				"-pdf",
+				"-interaction=nonstopmode",
+				"-halt-on-error",
+				"-file-line-error",
+				"-no-shell-escape",
+				mainFile,
+			],
+
+			{
+				cwd,
+				timeout: COMPILE_TIMEOUT_MS,
+				maxBuffer: 10 * 1024 * 1024,
+				env: {
+					PATH: process.env.PATH,
+					HOME: cwd,
+				},
+			},
+			(err, stdout, stderr) => {
+				let timedOut: boolean = false;
+				if (err && typeof err === "object" && "killed" in err) {
+					timedOut = Boolean(err.killed);
+				}
+				resolve({
+					stdout: stdout ?? "",
+					stderr: stderr ?? "",
+					timedOut,
+				});
+			},
+		);
+	});
 };
