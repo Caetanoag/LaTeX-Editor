@@ -96,7 +96,7 @@ export const listProjectFilesWithContent = async (
 export const updateFileContent = async (
 	id: number,
 	fileContent: string,
-): Promise<ProjectFile> => {
+): Promise<ProjectFile | undefined> => {
 	const result = await pool.query<ProjectFile>(
 		`
 		update project_files
