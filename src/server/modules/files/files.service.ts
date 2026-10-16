@@ -25,7 +25,7 @@ const ROLE_READ = [
 const ROLE_WRITE = ["owner", "editor"];
 const ROLE_MANAGE = ["owner"];
 
-const ensureFileAcess = async (
+const ensureFileAccess = async (
 	fileId: number,
 	userId: number,
 ): Promise<{ file: ProjectFile; role: string }> => {
@@ -42,7 +42,7 @@ const ensureFileWrite = async (
 	fileId: number,
 	userId: number,
 ): Promise<ProjectFile> => {
-	const { file, role } = await ensureFileAcess(fileId, userId);
+	const { file, role } = await ensureFileAccess(fileId, userId);
 	if (!ROLE_WRITE.includes(role)) {
 		throw new ForbiddenError("You do not have permission to edit this file");
 	}
@@ -95,7 +95,7 @@ export const getFile = async (
 	fileId: number,
 	userId: number,
 ): Promise<ProjectFile> => {
-	const { file } = await ensureFileAcess(fileId, userId);
+	const { file } = await ensureFileAccess(fileId, userId);
 	return file;
 };
 
@@ -140,5 +140,6 @@ export const listProjectFilesWithContent = async (
 	projectId: number,
 	userId: number,
 ): Promise<ProjectFile[]> => {
-	return listProjectFilesWithContent(projectId, userId);
+	await ensureProjectAccess(projectId, userId);
+	return listProjectFilesWithContentRepo(projectId);
 };
