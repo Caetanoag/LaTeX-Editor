@@ -5,10 +5,9 @@ import { basename, dirname, join } from "node:path";
 import { ConflictError, NotFoundError } from "../../lib/errors";
 import type { ProjectFile } from "../files/files.repository";
 import {
-	getFile,
-	listFiles,
-	listProjectFilesWithContent,
-} from "../files/files.service";
+	findFileById,
+	listProjectFilesWithContent as listFilesRepo,
+} from "../files/files.repository";
 import { ensureProjectAccess } from "../projects/projects.service";
 
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS ?? 15000);
@@ -55,7 +54,7 @@ const runLatexmk = (cwd: string, mainFile: string): Promise<LatexmkResult> => {
 				maxBuffer: 10 * 1024 * 1024,
 				env: {
 					PATH: process.env.PATH,
-					HOME: cwd,
+					HOME: process.env.HOME,
 				},
 			},
 			(err, stdout, stderr) => {
@@ -128,16 +127,19 @@ export const compileFile = async (
 	fileId: number,
 	userId: number,
 ): Promise<{ result: CompileResult; projectTitle: string }> => {
-	const file = await getFile(fileId, userId);
+	const file = await findFileById(fileId);
 	if (!file) throw new NotFoundError("File not found");
+
 	const { project } = await ensureProjectAccess(file.project_id, userId);
-	const files = await listProjectFilesWithContent(project.id, userId);
+
+	const files = await listFilesRepo(file.project_id);
 	const main = files.find((f) => f.is_main);
 	if (!main) {
 		throw new ConflictError(
 			"Project has no main file defined. Mark one before compiling.",
 		);
 	}
+
 	const result = await runCompilation(files, main);
 	return { result, projectTitle: project.title };
 };
