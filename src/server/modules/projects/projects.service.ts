@@ -3,8 +3,10 @@ import { findMemberRole as findWorkspaceMemberRole } from "../workspaces/workspa
 import {
 	findProjectById,
 	findProjectMemberRole,
+    createProject as createProjectRepo
 	type Project,
 } from "./projects.repository";
+import type { CreateProjectInput } from "./projects.schemas";
 
 const ensureProjectAccess = async (
 	projectId: number,
@@ -46,3 +48,23 @@ const ensureWrite = async (
 		throw new ForbiddenError("You do not have permission to edit this project");
 	return project;
 };
+
+export const createProject = async (
+	input: CreateProjectInput,
+	userId: number,
+): Promise<Project> => {
+	const workspaceRole = await findWorkspaceMemberRole(
+		input.workspaceId,
+		userId,
+	);
+	if (!workspaceRole) {
+		throw new ForbiddenError("You are not a member of this workspace");
+	}
+    return createProjectRepo({
+		workspaceId: input.workspaceId,
+		ownerId: userId,
+		title: input.title,
+		description: input.description ?? null,
+		visibility: input.visibility,
+	});
+}
