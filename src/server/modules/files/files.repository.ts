@@ -42,7 +42,7 @@ export const listProjectFiles = async (
 ): Promise<ProjectFile[]> => {
 	const result = await pool.query<ProjectFile>(
 		`
-			select ${FILE_COLUMNS} from project_files
+			select ${FILE_META_COLUMNS} from project_files
 			where project_id = $1
 			order by file_path
 		`,
