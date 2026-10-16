@@ -4,6 +4,7 @@ import {
 	createProject as createProjectRepo,
 	findProjectById,
 	findProjectMemberRole,
+	listProjectsForUser,
 	type Project,
 } from "./projects.repository";
 import type { CreateProjectInput } from "./projects.schemas";
@@ -68,3 +69,11 @@ export const createProject = async (
 		visibility: input.visibility,
 	});
 };
+
+export const listProjects = async (
+	userId: number,
+	workspaceId: number,
+): Promise<Project[]> => {
+	return listProjectsForUser(userId, workspaceId);
+};
+
