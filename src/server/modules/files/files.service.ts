@@ -2,6 +2,7 @@ import { ConflictError, ForbiddenError, NotFoundError } from "../../lib/errors";
 import { ensureProjectAccess } from "../projects/projects.service";
 import {
 	createFile as createFileRepo,
+	deleteFile as deleteFileRepo,
 	findFileById,
 	findFileByPath,
 	listProjectFiles,
@@ -105,4 +106,18 @@ export const updateFile = async (
 	const updated = await updateFileContent(fileId, input.fileContent);
 	if (!updated) throw new NotFoundError("File not found");
 	return updated;
+};
+
+export const deleteFile = async (
+	fileId: number,
+	userId: number,
+): Promise<void> => {
+	const file = await ensureFileWrite(fileId, userId);
+	if (file.is_main) {
+		const files = await listFiles(file.project_id, userId);
+		if (files.length <= 1) {
+			throw new ConflictError("Cannot delete the only file of the project");
+		}
+	}
+	await deleteFileRepo(fileId);
 };
