@@ -179,3 +179,15 @@ export const updateProject = async (
 	);
 	return result.rows[0];
 };
+
+export const deleteProject = async (id: number): Promise<void> => {
+	await pool.query(
+		`
+            updated projects
+            set archived_at = now(), updated_at = now()
+            where id = $1
+            and archived_at is null
+        `,
+		[id],
+	);
+};
