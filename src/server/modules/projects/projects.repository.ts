@@ -99,3 +99,43 @@ export const findProjectById = async (id: number): Promise<Project> => {
 	);
 	return result.rows[0];
 };
+
+export const listProjectsForUser = async (
+	userId: number,
+	workspaceId?: number,
+): Promise<Project[]> => {
+	const params: number[] = [userId];
+
+	let workspaceFilter = "";
+	if (workspaceId !== undefined) {
+		params.push(workspaceId);
+		workspaceFilter = `and p.workspace_id = $${params.length}`;
+	}
+
+	const result = await pool.query<Project>(
+		`
+    select ${PROJECT_COLUMNS}
+    from projects p
+    where p.archived_at is null
+      ${workspaceFilter}
+      and (
+        p.owner_id = $1
+        or exists (
+          select 1 from project_members pm
+          where pm.project_id = p.id and pm.user_id = $1
+        )
+        or (
+          p.visibility = 'workspace'
+          and exists (
+            select 1 from workspace_members wm
+            where wm.workspace_id = p.workspace_id and wm.user_id = $1
+          )
+        )
+        or p.visibility = 'public'
+      )
+    order by p.updated_at desc
+    `,
+		params,
+	);
+	return result.rows;
+};
