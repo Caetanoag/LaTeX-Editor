@@ -2,7 +2,14 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { ConflictError, NotFoundError } from "../../lib/errors";
 import type { ProjectFile } from "../files/files.repository";
+import {
+	getFile,
+	listFiles,
+	listProjectFilesWithContent,
+} from "../files/files.service";
+import { ensureProjectAccess } from "../projects/projects.service";
 
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS ?? 15000);
 const MAX_LOG_BYTES = 100 * 1024;
@@ -115,4 +122,22 @@ const runCompilation = async (
 	} finally {
 		await rm(cwd, { recursive: true, force: true });
 	}
+};
+
+export const compileFile = async (
+	fileId: number,
+	userId: number,
+): Promise<{ result: CompileResult; projectTitle: string }> => {
+	const file = await getFile(fileId, userId);
+	if (!file) throw new NotFoundError("File not found");
+	const { project } = await ensureProjectAccess(file.project_id, userId);
+	const files = await listProjectFilesWithContent(project.id, userId);
+	const main = files.find((f) => f.is_main);
+	if (!main) {
+		throw new ConflictError(
+			"Project has no main file defined. Mark one before compiling.",
+		);
+	}
+	const result = await runCompilation(files, main);
+	return { result, projectTitle: project.title };
 };
