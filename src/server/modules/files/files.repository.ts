@@ -146,3 +146,7 @@ export const setMainFile = async (
 		await client.release();
 	}
 };
+
+export const deleteFile = async (id: number): Promise<void> => {
+	await pool.query("delete from file_projects where id = $1", [id]);
+};
