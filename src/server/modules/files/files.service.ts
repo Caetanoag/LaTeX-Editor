@@ -7,8 +7,9 @@ import {
 	listProjectFiles,
 	type ProjectFile,
 	type ProjectFileMeta,
+	updateFileContent,
 } from "./files.repository";
-import type { CreateFileInput } from "./files.schemas";
+import type { CreateFileInput, UpdateFileInput } from "./files.schemas";
 
 const ROLE_READ = [
 	"owner",
@@ -93,4 +94,15 @@ export const getFile = async (
 ): Promise<ProjectFile> => {
 	const { file } = await ensureFileAcess(fileId, userId);
 	return file;
+};
+
+export const updateFile = async (
+	fileId: number,
+	userId: number,
+	input: UpdateFileInput,
+): Promise<ProjectFile> => {
+	await ensureFileWrite(fileId, userId);
+	const updated = await updateFileContent(fileId, input.fileContent);
+	if (!updated) throw new NotFoundError("File not found");
+	return updated;
 };
