@@ -33,3 +33,16 @@ const ensureProjectAccess = async (
 	}
 	throw new ForbiddenError("You do not have access to this repository");
 };
+
+const ensureWrite = async (
+	projectId: number,
+	userId: number,
+): Promise<Project> => {
+	const { project, effectiveRole } = await ensureProjectAccess(
+		projectId,
+		userId,
+	);
+	if (!["owner", "editor"].includes(effectiveRole))
+		throw new ForbiddenError("You do not have permission to edit this project");
+	return project;
+};
