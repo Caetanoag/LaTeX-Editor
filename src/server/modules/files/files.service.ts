@@ -33,7 +33,7 @@ const ensureFileAccess = async (
 	if (!file) throw new NotFoundError("File not found");
 	const role = await ensureProjectAccess(file.project_id, userId);
 	if (!ROLE_READ.includes(role.effectiveRole)) {
-		throw new ForbiddenError("You do not have acess to this error");
+		throw new ForbiddenError("You do not have acess to this file");
 	}
 	return { file: file, role: role.effectiveRole };
 };
