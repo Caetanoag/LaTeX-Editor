@@ -78,3 +78,17 @@ export const findFileByPath = async (
 	);
 	return result.rows[0];
 };
+
+export const listProjectFilesWithContent = async (
+	projectId: number,
+): Promise<ProjectFile[]> => {
+	const result = await pool.query<ProjectFile>(
+		`
+			select ${FILE_COLUMNS} from project_files
+			where project_id = $1
+			order by file_path
+		`,
+		[projectId],
+	);
+	return result.rows;
+};
