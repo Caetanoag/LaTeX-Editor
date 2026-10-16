@@ -31,7 +31,7 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
 	const projectId = Number(req.params.id);
-	const project = await getProjectInformation(projectId, req.user!.id);
+	const project = await getProjectInformation(req.user!.id, projectId);
 	res.json({ project });
 });
 
