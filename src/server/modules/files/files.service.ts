@@ -23,7 +23,6 @@ const ROLE_READ = [
 	"workspace",
 ];
 const ROLE_WRITE = ["owner", "editor"];
-const ROLE_MANAGE = ["owner"];
 
 const ensureFileAccess = async (
 	fileId: number,
