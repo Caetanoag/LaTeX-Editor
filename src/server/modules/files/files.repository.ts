@@ -92,3 +92,19 @@ export const listProjectFilesWithContent = async (
 	);
 	return result.rows;
 };
+
+export const updateFileContent = async (
+	id: number,
+	fileContent: string,
+): Promise<ProjectFile> => {
+	const result = await pool.query<ProjectFile>(
+		`
+		update project_files
+		set file_content = $1, updated_at = now()
+		where id = $2
+		returning ${FILE_COLUMNS}	
+	`,
+		[fileContent, id],
+	);
+	return result.rows[0];
+};
