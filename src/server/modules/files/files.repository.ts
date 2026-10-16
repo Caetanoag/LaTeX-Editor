@@ -8,3 +8,13 @@ export type ProjectFile = {
 	updated_at: Date;
 };
 export type ProjectFileMeta = Omit<ProjectFile, "file_content">;
+
+const FILE_COLUMNS = `
+  id, project_id, file_path, file_content, is_main,
+  created_at, updated_at
+`;
+
+const FILE_META_COLUMNS = `
+  id, project_id, file_path, is_main,
+  created_at, updated_at
+`;
