@@ -57,15 +57,6 @@ const ensureProjectWrite = async (
 		throw new ForbiddenError("You do not have access to write to this project");
 	}
 };
-const ensureProjectManage = async (
-	projectId: number,
-	userId: number,
-): Promise<void> => {
-	const { effectiveRole } = await ensureProjectAccess(projectId, userId);
-	if (!ROLE_MANAGE.includes(effectiveRole)) {
-		throw new ForbiddenError("Only the project owner can perform this action");
-	}
-};
 
 export const createFile = async (
 	projectId: number,
