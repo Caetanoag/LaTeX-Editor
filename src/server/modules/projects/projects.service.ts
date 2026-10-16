@@ -1,13 +1,18 @@
 import { ForbiddenError, NotFoundError } from "../../lib/errors";
 import { findMemberRole as findWorkspaceMemberRole } from "../workspaces/workspaces.repository";
 import {
+	deleteProject as archiveProjectRepo,
 	createProject as createProjectRepo,
 	findProjectById,
 	findProjectMemberRole,
 	listProjectsForUser,
 	type Project,
+	updateProject as updatedProjectRepo,
 } from "./projects.repository";
-import type { CreateProjectInput } from "./projects.schemas";
+import type {
+	CreateProjectInput,
+	UpdateProjectInput,
+} from "./projects.schemas";
 
 const ensureProjectAccess = async (
 	projectId: number,
@@ -86,4 +91,31 @@ export const getProjectInformation = async (
 		userId,
 	);
 	return { ...project, effectiveRole };
+};
+
+export const updateProject = async (
+	userId: number,
+	projectId: number,
+	input: UpdateProjectInput,
+): Promise<Project> => {
+	await ensureWrite(projectId, userId);
+
+	const updated = await updatedProjectRepo(projectId, {
+		title: input.title,
+		description: input.description,
+		visibility: input.visibility,
+	});
+	if (!updated) throw new NotFoundError("Project not found");
+	return updated;
+};
+
+export const deleteProject = async (
+	projectId: number,
+	userId: number,
+): Promise<void> => {
+	const { project } = await ensureProjectAccess(projectId, userId);
+	if (project.owner_id !== userId) {
+		throw new ForbiddenError("Only the owner can delete this project");
+	}
+	await archiveProjectRepo(projectId);
 };
