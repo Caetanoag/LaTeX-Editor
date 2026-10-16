@@ -8,6 +8,7 @@ import {
 	listProjectFiles,
 	type ProjectFile,
 	type ProjectFileMeta,
+	setMainFile,
 	updateFileContent,
 } from "./files.repository";
 import type { CreateFileInput, UpdateFileInput } from "./files.schemas";
@@ -120,4 +121,16 @@ export const deleteFile = async (
 		}
 	}
 	await deleteFileRepo(fileId);
+};
+
+export const markAsMain = async (
+	fileId: number,
+	userId: number,
+): Promise<ProjectFile> => {
+	const file = await ensureFileWrite(fileId, userId);
+	if (file.is_main) return file;
+
+	const updated = await setMainFile(file.project_id, fileId);
+	if (!updated) throw new NotFoundError("File not found");
+	return updated;
 };
