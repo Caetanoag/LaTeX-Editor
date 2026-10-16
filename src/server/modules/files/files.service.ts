@@ -1,6 +1,12 @@
-import { ForbiddenError, NotFoundError } from "../../lib/errors";
+import { ConflictError, ForbiddenError, NotFoundError } from "../../lib/errors";
 import { ensureProjectAccess } from "../projects/projects.service";
-import { findFileById, type ProjectFile } from "./files.repository";
+import {
+	createFile as createFileRepo,
+	findFileById,
+	findFileByPath,
+	type ProjectFile,
+} from "./files.repository";
+import type { CreateFileInput } from "./files.schemas";
 
 const ROLE_READ = [
 	"owner",
@@ -53,4 +59,21 @@ const ensureProjectManage = async (
 	if (!ROLE_MANAGE.includes(effectiveRole)) {
 		throw new ForbiddenError("Only the project owner can perform this action");
 	}
+};
+
+export const createFile = async (
+	projectId: number,
+	userId: number,
+	input: CreateFileInput,
+): Promise<ProjectFile> => {
+	await ensureProjectWrite(projectId, userId);
+
+	const existing = await findFileByPath(projectId, input.filePath);
+	if (existing) throw new ConflictError("A file with this path already exists");
+	return createFileRepo({
+		projectId: projectId,
+		filePath: input.filePath,
+		fileContent: input.fileContent,
+		isMain: input.isMain,
+	});
 };
