@@ -9,7 +9,8 @@
 	"scripts": {
 		"build:client": "bun build ./src/client/main.ts --outfile ./public/bundle.js --target browser",
 		"dev": "bun --watch src/server/server.ts",
-		"start": "bun run src/server/server.ts"
+		"start": "bun run src/server/server.ts",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"express": "^5.2.1",
