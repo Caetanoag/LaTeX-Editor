@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import type { ProjectFile } from "../files/files.repository";
 
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS ?? 15000);
@@ -63,4 +63,21 @@ const runLatexmk = (cwd: string, mainFile: string): Promise<LatexmkResult> => {
 			},
 		);
 	});
+};
+
+const readLogFile = async (
+	cwd: string,
+	mainRelPath: string,
+	fallback: string,
+): Promise<string> => {
+	const mainDir = dirname(mainRelPath);
+	const mainBase = basename(mainRelPath).replace(/\.tex$/, "");
+	const logPath = join(cwd, mainDir, `${mainBase}.log`);
+
+	try {
+		const content = await readFile(logPath, "utf-8");
+		return content.slice(-MAX_LOG_BYTES);
+	} catch {
+		return fallback.slice(-MAX_LOG_BYTES);
+	}
 };
