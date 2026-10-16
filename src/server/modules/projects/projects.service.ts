@@ -14,7 +14,7 @@ import type {
 	UpdateProjectInput,
 } from "./projects.schemas";
 
-const ensureProjectAccess = async (
+export const ensureProjectAccess = async (
 	projectId: number,
 	userId: number,
 ): Promise<{ project: Project; effectiveRole: string }> => {
