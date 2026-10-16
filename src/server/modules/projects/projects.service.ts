@@ -77,3 +77,13 @@ export const listProjects = async (
 	return listProjectsForUser(userId, workspaceId);
 };
 
+export const getProjectInformation = async (
+	userId: number,
+	projectId: number,
+): Promise<Project & { effectiveRole: string }> => {
+	const { project, effectiveRole } = await ensureProjectAccess(
+		projectId,
+		userId,
+	);
+	return { ...project, effectiveRole };
+};
