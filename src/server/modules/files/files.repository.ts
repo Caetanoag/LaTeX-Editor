@@ -108,3 +108,41 @@ export const updateFileContent = async (
 	);
 	return result.rows[0];
 };
+
+export const setMainFile = async (
+	projectId: number,
+	fileId: number,
+): Promise<ProjectFile | undefined> => {
+	const client = await pool.connect();
+	try {
+		await client.query("begin");
+
+		await client.query(
+			`
+			update project_files
+			set is_main = false, updated_at = now()
+			where project_id = $1
+			and is_main = true
+		`,
+			[projectId],
+		);
+
+		const result = await client.query<ProjectFile>(
+			`
+			update project_files
+			set is_main = true, updated_at = now()
+			where id = $1
+			and project_id = $2
+			returning ${FILE_COLUMNS}	
+		`,
+			[fileId, projectId],
+		);
+		await client.query("commit");
+		return result.rows[0];
+	} catch (error) {
+		await client.query("rollback");
+		throw error;
+	} finally {
+		await client.release();
+	}
+};
