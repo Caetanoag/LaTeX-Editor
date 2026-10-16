@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import express from "express";
 import { errorHandler } from "./middleware/error-handler";
 import { authRouter } from "./modules/auth/auth.index";
+import { filesRouter } from "./modules/files/files.index";
 import { projectsRouter } from "./modules/projects/projects.index";
 import { workspacesRouter } from "./modules/workspaces/workspaces.index";
 export const app = express();
@@ -23,5 +24,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use("/auth", authRouter);
 app.use("/workspaces", workspacesRouter);
 app.use("/projects", projectsRouter);
+app.use("/", filesRouter);
 app.use(errorHandler);
 export default app;
