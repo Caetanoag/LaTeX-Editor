@@ -139,3 +139,43 @@ export const listProjectsForUser = async (
 	);
 	return result.rows;
 };
+
+export const updateProject = async (
+	id: number,
+	input: {
+		title?: string;
+		description?: string | null;
+		visibility?: ProjectVisibility;
+	},
+): Promise<Project> => {
+	const fields: string[] = [];
+	const values: (string | number | null)[] = [];
+	let index = 1;
+
+	if (input.title !== undefined) {
+		fields.push(`title = $${index++}`);
+		values.push(input.title);
+	}
+	if (input.description !== undefined) {
+		fields.push(`description = $${index++}`);
+		values.push(input.description);
+	}
+	if (input.visibility !== undefined) {
+		fields.push(`visibility = $${index++}`);
+		values.push(input.visibility);
+	}
+	if (fields.length === 0) return findProjectById(id);
+	fields.push(`updated_at = now()`);
+	values.push(id);
+	const result = await pool.query<Project>(
+		`
+            updated projects
+            set ${fields.join(", ")}
+            where id = $${index}
+            and archived_at is null
+            returning ${PROJECT_COLUMNS}
+        `,
+		values,
+	);
+	return result.rows[0];
+};
