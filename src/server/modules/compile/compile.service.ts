@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import type { ProjectFile } from "../files/files.repository";
 
@@ -79,5 +80,39 @@ const readLogFile = async (
 		return content.slice(-MAX_LOG_BYTES);
 	} catch {
 		return fallback.slice(-MAX_LOG_BYTES);
+	}
+};
+
+const runCompilation = async (
+	files: ProjectFile[],
+	main: ProjectFile,
+): Promise<CompileResult> => {
+	const cwd = await mkdtemp(join(tmpdir(), "latex-compile-"));
+	const start = Date.now();
+	try {
+		await writeFilesToDir(files, cwd);
+		const mainRelPath = main.file_path.replace(/^\/+/, "");
+		const result = await runLatexmk(cwd, mainRelPath);
+		const durationMs = Date.now() - start;
+		if (result.timedOut) {
+			return { status: "timeout", durationMs };
+		}
+		const mainDir = dirname(mainRelPath);
+		const mainBase = basename(mainRelPath).replace(/\.tex$/, "");
+		const pdfPath = join(cwd, mainDir, `${mainBase}.pdf`);
+
+		try {
+			const pdf = await readFile(pdfPath);
+			return { status: "success", pdf, durationMs };
+		} catch {
+			const log = await readLogFile(
+				cwd,
+				mainRelPath,
+				`${result.stdout}\n${result.stderr}`,
+			);
+			return { status: "error", log, durationMs };
+		}
+	} finally {
+		await rm(cwd, { recursive: true, force: true });
 	}
 };
