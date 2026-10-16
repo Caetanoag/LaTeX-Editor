@@ -50,3 +50,14 @@ export const listProjectFiles = async (
 	);
 	return result.rows;
 };
+
+export const findFileById = async (id: number): Promise<ProjectFile> => {
+	const result = await pool.query<ProjectFile>(
+		`
+			select ${FILE_COLUMNS} from project_files
+			where id = $1
+		`,
+		[id],
+	);
+	return result.rows[0];
+};
