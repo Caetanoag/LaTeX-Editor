@@ -87,3 +87,15 @@ export const createProject = async (input: {
 		client.release();
 	}
 };
+
+export const findProjectById = async (id: number): Promise<Project> => {
+	const result = await pool.query<Project>(
+		`
+            select ${PROJECT_COLUMNS} from projects
+            where id = $1
+            and archived_at is null
+        `,
+		[id],
+	);
+	return result.rows[0];
+};
