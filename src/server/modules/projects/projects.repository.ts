@@ -20,7 +20,7 @@ const PROJECT_COLUMNS = `
 
 export const findProjectMemberRole = async (
 	projectId: number,
-	memberId: number,
+	userId: number,
 ): Promise<string | undefined> => {
 	const result = await pool.query<{ role: string }>(
 		`
@@ -30,7 +30,7 @@ export const findProjectMemberRole = async (
         where pm.project_id = $1
         and pm.user_id = $2
         `,
-		[projectId, memberId],
+		[projectId, userId],
 	);
 	return result.rows[0]?.role;
 };
@@ -44,7 +44,7 @@ export const createProject = async (input: {
 }): Promise<Project> => {
 	const ownerRole = await pool.query<{ id: number }>(
 		`
-            select id from roles where scope = 'project' and name = 'owner',
+            select id from roles where scope = 'project' and name = 'owner'
         `,
 	);
 	const ownerRoleId = ownerRole.rows[0]?.id;
@@ -56,7 +56,7 @@ export const createProject = async (input: {
 		await client.query("begin");
 		const projectResult = await client.query<Project>(
 			`
-                insert into projects (workspace_id, owner_id, title, description, visiblity)
+                insert into projects (workspace_id, owner_id, title, description, visibility)
                 values ($1, $2, $3, $4, $5)
                 returning ${PROJECT_COLUMNS}
             `,
@@ -88,7 +88,9 @@ export const createProject = async (input: {
 	}
 };
 
-export const findProjectById = async (id: number): Promise<Project> => {
+export const findProjectById = async (
+	id: number,
+): Promise<Project | undefined> => {
 	const result = await pool.query<Project>(
 		`
             select ${PROJECT_COLUMNS} from projects
@@ -147,7 +149,7 @@ export const updateProject = async (
 		description?: string | null;
 		visibility?: ProjectVisibility;
 	},
-): Promise<Project> => {
+): Promise<Project | undefined> => {
 	const fields: string[] = [];
 	const values: (string | number | null)[] = [];
 	let index = 1;
@@ -169,7 +171,7 @@ export const updateProject = async (
 	values.push(id);
 	const result = await pool.query<Project>(
 		`
-            updated projects
+            update projects
             set ${fields.join(", ")}
             where id = $${index}
             and archived_at is null
@@ -183,7 +185,7 @@ export const updateProject = async (
 export const deleteProject = async (id: number): Promise<void> => {
 	await pool.query(
 		`
-            updated projects
+            update projects
             set archived_at = now(), updated_at = now()
             where id = $1
             and archived_at is null
