@@ -6,6 +6,7 @@ import {
 	findFileById,
 	findFileByPath,
 	listProjectFiles,
+	listProjectFilesWithContent as listProjectFilesWithContentRepo,
 	type ProjectFile,
 	type ProjectFileMeta,
 	setMainFile,
@@ -133,4 +134,11 @@ export const markAsMain = async (
 	const updated = await setMainFile(file.project_id, fileId);
 	if (!updated) throw new NotFoundError("File not found");
 	return updated;
+};
+
+export const listProjectFilesWithContent = async (
+	projectId: number,
+	userId: number,
+): Promise<ProjectFile[]> => {
+	return listProjectFilesWithContent(projectId, userId);
 };
