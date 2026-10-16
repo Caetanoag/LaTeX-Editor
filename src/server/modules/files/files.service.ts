@@ -4,7 +4,9 @@ import {
 	createFile as createFileRepo,
 	findFileById,
 	findFileByPath,
+	listProjectFiles,
 	type ProjectFile,
+	type ProjectFileMeta,
 } from "./files.repository";
 import type { CreateFileInput } from "./files.schemas";
 
@@ -76,4 +78,19 @@ export const createFile = async (
 		fileContent: input.fileContent,
 		isMain: input.isMain,
 	});
+};
+
+export const listFiles = async (
+	projectId: number,
+	userId: number,
+): Promise<ProjectFileMeta[]> => {
+	await ensureProjectAccess(projectId, userId);
+	return await listProjectFiles(projectId);
+};
+export const getFile = async (
+	fileId: number,
+	userId: number,
+): Promise<ProjectFile> => {
+	const { file } = await ensureFileAcess(fileId, userId);
+	return file;
 };
