@@ -40,3 +40,10 @@ export const updateProjectSchema = z.object({
 
 	visibility: z.enum(VISIBILITIES).optional(),
 });
+
+export const listProjectsQuerySchema = z.object({
+	workspaceId: z.coerce.number().int().positive().optional(),
+});
+
+export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
