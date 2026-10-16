@@ -1,9 +1,9 @@
 import { ForbiddenError, NotFoundError } from "../../lib/errors";
 import { findMemberRole as findWorkspaceMemberRole } from "../workspaces/workspaces.repository";
 import {
+	createProject as createProjectRepo,
 	findProjectById,
 	findProjectMemberRole,
-    createProject as createProjectRepo
 	type Project,
 } from "./projects.repository";
 import type { CreateProjectInput } from "./projects.schemas";
@@ -60,11 +60,11 @@ export const createProject = async (
 	if (!workspaceRole) {
 		throw new ForbiddenError("You are not a member of this workspace");
 	}
-    return createProjectRepo({
+	return createProjectRepo({
 		workspaceId: input.workspaceId,
 		ownerId: userId,
 		title: input.title,
 		description: input.description ?? null,
 		visibility: input.visibility,
 	});
-}
+};
