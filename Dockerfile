@@ -5,7 +5,11 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     texlive-latex-base \
     texlive-latex-recommended \
+    texlive-latex-extra \
+    texlive-fonts-recommended \
+    texlive-lang-portuguese \
     latexmk \
+    perl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=bun-bin /usr/local/bin/bun /usr/local/bin/bun
