@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=bun-bin /usr/local/bin/bun /usr/local/bin/bun
 
 WORKDIR /app
+ENV HOME=/app
 
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
