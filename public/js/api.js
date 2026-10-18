@@ -1,9 +1,15 @@
+const TOKEN_KEY = "token";
+
+export const getToken = () => localStorage.getItem(TOKEN_KEY);
+export const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
+export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+
 export const request = async (path, options = {}) => {
 	const { method = "GET", body, isBlob = false } = options;
 
-	const token = localStorage.getItem("token");
-
+	const token = getToken();
 	const headers = {};
+
 	if (body) headers["Content-Type"] = "application/json";
 	if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -14,14 +20,21 @@ export const request = async (path, options = {}) => {
 	});
 
 	if (response.status === 401) {
-		localStorage.removeItem("token");
+		clearToken();
 		window.location.href = "/index.html";
 		throw new Error("Sessão expirada");
 	}
 
 	if (!response.ok) {
 		const errorData = await response.json().catch(() => ({}));
-		throw new Error(errorData.message || errorData.error || "Erro inesperado");
+
+		const errorMessage =
+			errorData.message || errorData.error || "Erro inesperado";
+		const error = new Error(errorMessage);
+
+		error.data = errorData;
+
+		throw error;
 	}
 
 	if (isBlob) {
