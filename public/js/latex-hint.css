@@ -1,0 +1,11 @@
+.CodeMirror-hint-entered {
+	color: #170;
+}
+
+.CodeMirror-hint-arg {
+	color: gray;
+}
+
+li.CodeMirror-hint-active {
+	background: rgb(201, 233, 195);
+}
