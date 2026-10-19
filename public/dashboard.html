@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - LaTeX Editor</title>
+    <link rel="stylesheet" href="style/main.css">
+    <style>
+        body { align-items: flex-start; padding-top: 2rem; }
+        .dashboard { width: 100%; max-width: 1000px; margin: 0 auto; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        
+        .panels { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }
+        
+        .panel { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        
+        ul { list-style: none; padding: 0; }
+        li { padding: 0.75rem; border-bottom: 1px solid #eee; cursor: pointer; }
+        li:hover { background: #f9fafb; }
+        li.active { background: #eef4fb; border-left: 4px solid #0066cc; font-weight: 500; }
+        
+        .empty { color: #6b7280; font-style: italic; font-size: 0.875rem; }
+        button.small { padding: 0.25rem 0.5rem; font-size: 0.875rem; width: auto; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Meus Projetos</h1>
+            <button type="button" id="logout-btn" class="small" style="background: #ef4444;">Sair</button>
+        </div>
+
+        <div id="error-message" style="color: red; display: none; margin-bottom: 1rem;"></div>
+
+        <div class="panels">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Workspaces</h2>
+                    <button type="button" id="new-ws-btn" class="small">+ Novo</button>
+                </div>
+                <ul id="workspace-list"></ul>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 id="projects-title">Projetos</h2>
+                    <button type="button" id="new-proj-btn" class="small" style="display: none;">+ Novo</button>
+                </div>
+                <ul id="project-list">
+                    <li class="empty">Selecione um workspace ao lado.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { request } from './js/api.js';
+
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/index.html';
+
+        const errorDiv = document.getElementById('error-message');
+        const showError = (msg) => {
+            errorDiv.textContent = msg;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000); 
+        };
+
+        document.getElementById('logout-btn').onclick = async () => {
+            try { await request('/auth/logout', { method: 'POST' }); } catch(e) {}
+            localStorage.removeItem('token');
+            window.location.href = '/index.html';
+        };
+
+        const wsList = document.getElementById('workspace-list');
+        let currentWorkspaceId = null;
+
+        const loadWorkspaces = async () => {
+            try {
+                const data = await request('/workspaces');
+                
+                if (data.workspaces.length === 0) {
+                    wsList.innerHTML = '<li class="empty">Nenhum workspace. Crie um!</li>';
+                    return;
+                }
+
+                wsList.innerHTML = '';
+                data.workspaces.forEach(ws => {
+                    const li = document.createElement('li');
+                    li.textContent = ws.name;
+                    li.onclick = () => selectWorkspace(ws.id, ws.name, li);
+                    wsList.appendChild(li);
+                });
+            } catch (err) {
+                showError(err.message);
+            }
+        };
+
+        const projectList = document.getElementById('project-list');
+        const projectsTitle = document.getElementById('projects-title');
+        const newProjBtn = document.getElementById('new-proj-btn');
+
+        const selectWorkspace = async (wsId, wsName, liElement) => {
+            currentWorkspaceId = wsId;
+        
+            document.querySelectorAll('#workspace-list li').forEach((el) => {el.classList.remove('active')});
+            liElement.classList.add('active');
+
+            projectsTitle.textContent = `Projetos em "${wsName}"`;
+            newProjBtn.style.display = 'block';
+            projectList.innerHTML = '<li class="empty">Carregando...</li>';
+
+            try {
+                const data = await request(`/projects?workspaceId=${wsId}`);
+                
+                if (data.projects.length === 0) {
+                    projectList.innerHTML = '<li class="empty">Nenhum projeto aqui.</li>';
+                    return;
+                }
+
+                projectList.innerHTML = '';
+                data.projects.forEach(proj => {
+                    const li = document.createElement('li');
+                    li.textContent = proj.title;
+                    li.onclick = () => window.location.href = `/editor.html?projectId=${proj.id}`;
+                    projectList.appendChild(li);
+                });
+            } catch (err) {
+                showError(err.message);
+            }
+        };
+
+        document.getElementById('new-ws-btn').onclick = async () => {
+            const name = prompt("Nome do novo workspace:");
+            if (!name) return;
+            try {
+                await request('/workspaces', {
+                    method: 'POST',
+                    body: { name }
+                });
+                loadWorkspaces();
+            } catch (err) {
+                showError(err.message);
+            }
+        };
+
+        newProjBtn.onclick = async () => {
+            if (!currentWorkspaceId) return;
+            
+            const title = prompt("Título do novo projeto:");
+            if (!title) return;
+
+            try {
+                await request('/projects', {
+                    method: 'POST',
+                    body: { 
+                        workspaceId: currentWorkspaceId, 
+                        title,
+                        visibility: "private"
+                    }
+                });
+                selectWorkspace(currentWorkspaceId, projectsTitle.textContent.replace(/Projetos em "|"/g, ''), document.querySelector('#workspace-list li.active'));
+            } catch (err) {
+                showError(err.message);
+            }
+        };
+
+        loadWorkspaces();
+    </script>
+</body>
+</html>
