@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor - LaTeX Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+    <link rel="stylesheet" href="./js/latex-hint.css">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #1e1e1e;
+            color: #fff;
+            overflow: hidden;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            background: #2d2d2d;
+            border-bottom: 1px solid #444;
+            height: 50px;
+        }
+
+        header h1 { font-size: 1.1rem; font-weight: 500; }
+        
+        .actions { display: flex; gap: 0.5rem; align-items: center; }
+        
+        button {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: opacity 0.2s;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-save { background: #eab308; color: #000; }
+        .btn-compile { background: #22c55e; color: #fff; }
+        .btn-back { background: #4b5563; color: #fff; }
+        .btn-main { background: #6366f1; color: white; display: none; }
+
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        aside {
+            width: 250px;
+            background: #252526;
+            border-right: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .file-list { list-style: none; }
+        .file-list li {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: #ccc;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+        }
+        .file-list li:hover { background: #333; }
+        .file-list li.active { background: #0066cc; color: white; }
+        .main-star { color: #eab308; font-size: 0.8rem; }
+        
+        .new-file-btn { margin: 1rem; padding: 0.5rem; background: #444; color: white; }
+        .editor-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #444;
+        }
+        .CodeMirror { height: 100%; font-size: 14px; font-family: monospace; }
+
+        .pdf-pane {
+            flex: 1;
+            background: #525659;
+            display: flex;
+            flex-direction: column;
+        }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        #error-overlay {
+            display: none;
+            background: rgba(20, 20, 20, 0.98);
+            color: #ef4444;
+            padding: 1.5rem;
+            position: absolute;
+            top: 50px; right: 0; bottom: 0; width: 50%;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            border-left: 4px solid #ef4444;
+            z-index: 100;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1 id="project-title">Editor do Projeto</h1>
+        </div>
+        <div class="actions">
+            <button type='button' class="btn-back" onclick="window.location.href='/dashboard.html'">Voltar</button>
+            <button type='button' class="btn-main" id="set-main-btn">Tornar Main</button>
+            <button type='button' class="btn-save" id="save-btn">Salvar (Ctrl+S)</button>
+            <button type='button' class="btn-compile" id="compile-btn">Compilar PDF</button>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <aside>
+            <button type="button" class="new-file-btn" id="new-file-btn">+ Novo Arquivo</button>
+            <ul class="file-list" id="file-list"></ul>
+        </aside>
+
+        <div class="editor-pane">
+            <textarea id="code-editor"></textarea>
+        </div>
+
+        <div class="pdf-pane">
+            <iframe title="pdf-preview" id="pdf-preview" src="about:blank"></iframe>
+        </div>
+    </div>
+
+    <div id="error-overlay"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/stex/stex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+
+    <script type="module">
+        import { request } from './js/api.js';
+
+        if (!localStorage.getItem('token')) window.location.href = '/index.html';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const projectId = urlParams.get('projectId');
+        if (!projectId) {
+            alert("Projeto não encontrado");
+            window.location.href = '/dashboard.html';
+        }
+
+        let currentFileId = null;
+        let currentFileIsMain = false;
+
+        const cm = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
+            lineNumbers: true,
+            mode: "stex",
+            theme: "material-darker",
+            autoCloseBrackets: true,
+            indentUnit: 4,
+            lineWrapping: true,
+            extraKeys: {
+                "Ctrl-Space": (editor) => editor.showHint({ hint: CodeMirror.hint.stex, completeSingle: false })
+            }
+        });
+
+        import LaTeXHint from './js/latex-hint.js';
+        import { macros } from './js/macros.js';
+
+        CodeMirror.registerHelper('hint', 'stex', (cm) => LaTeXHint(cm, macros));
+
+        cm.on('inputRead', (cm, change) => {
+            if (change.text[0] === '\\') {
+                cm.showHint({ hint: CodeMirror.hint.stex, completeSingle: false });
+            }
+        });
+        const fileList = document.getElementById('file-list');
+        const errorOverlay = document.getElementById('error-overlay');
+        const pdfIframe = document.getElementById('pdf-preview');
+        const saveBtn = document.getElementById('save-btn');
+        const compileBtn = document.getElementById('compile-btn');
+        const setMainBtn = document.getElementById('set-main-btn');
+
+        const loadFiles = async () => {
+            try {
+                const data = await request(`/projects/${projectId}/files`);
+                fileList.innerHTML = '';
+                
+                if (data.files.length === 0) {
+                    fileList.innerHTML = '<li style="color:#777">Nenhum arquivo.</li>';
+                    return;
+                }
+
+                data.files.forEach(file => {
+                    const li = document.createElement('li');
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = file.file_path.replace(/^\//, '');
+                    const starSpan = document.createElement('span');
+                    if (file.is_main) {
+                        starSpan.textContent = '★';
+                        starSpan.className = 'main-star';
+                    }
+                    li.appendChild(nameSpan);
+                    li.appendChild(starSpan);
+                    li.onclick = () => loadFileContent(file.id, file.file_path, li, file.is_main);
+                    fileList.appendChild(li);
+                });
+            } catch (err) {
+                alert(`Erro ao carregar arquivos: ${err.message}`);
+            }
+        };
+
+        const loadFileContent = async (fileId, filePath, liElement, isMain) => {
+            document.querySelectorAll('.file-list li').forEach(el => {el.classList.remove('active')});
+            liElement.classList.add('active');
+
+            currentFileId = fileId;
+            currentFileIsMain = isMain;
+            setMainBtn.style.display = currentFileIsMain ? 'none' : 'block';
+
+            try {
+                const data = await request(`/files/${fileId}`);
+                cm.setValue(data.file.file_content);
+                errorOverlay.style.display = 'none';
+            } catch (err) {
+                alert(`Erro ao carregar: ${err.message}`);
+            }
+        };
+
+        setMainBtn.onclick = async () => {
+            if (!currentFileId || currentFileIsMain) return;
+            setMainBtn.disabled = true;
+            setMainBtn.textContent = "Definindo...";
+
+            try {
+                await request(`/files/${currentFileId}/main`, { method: "PATCH" });
+                await loadFiles(); 
+                currentFileIsMain = true;
+                setMainBtn.style.display = 'none';
+            } catch (err) {
+                alert(`Erro: ${err.message}`);
+            } finally {
+                setMainBtn.disabled = false;
+                setMainBtn.textContent = "Tornar Main";
+            }
+        };
+
+        const saveFile = async () => {
+            if (!currentFileId) return alert("Nenhum arquivo selecionado");
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Salvando...";
+            
+            try {
+                await request(`/files/${currentFileId}`, {
+                    method: "PUT",
+                    body: { fileContent: cm.getValue() }
+                });
+                saveBtn.textContent = "Salvo!";
+                setTimeout(() => saveBtn.textContent = "Salvar (Ctrl+S)", 2000);
+            } catch (err) {
+                alert(`Erro ao salvar: ${err.message}`);
+                saveBtn.textContent = "Salvar (Ctrl+S)";
+            } finally {
+                saveBtn.disabled = false;
+            }
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveFile();
+            }
+        });
+        saveBtn.onclick = saveFile;
+
+        compileBtn.onclick = async () => {
+            if (!currentFileId) return alert("Abra um arquivo primeiro");
+            
+            compileBtn.disabled = true;
+            compileBtn.textContent = "Compilando...";
+            errorOverlay.style.display = 'none';
+            pdfIframe.src = "about:blank";
+
+            try {
+                await request(`/files/${currentFileId}`, {
+                    method: "PUT",
+                    body: { fileContent: cm.getValue() }
+                });
+
+                const pdfBlob = await request(`/files/${currentFileId}/compile`, {
+                    method: "POST",
+                    isBlob: true
+                });
+
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                pdfIframe.src = pdfUrl;
+
+            } catch (err) {
+                const logContent = err.data?.log || err.message;
+                
+                errorOverlay.textContent = `ERRO NA COMPILAÇÃO:\n\n ${logContent} `;
+                errorOverlay.style.display = 'block';
+            } finally {
+                compileBtn.disabled = false;
+                compileBtn.textContent = "Compilar PDF";
+            }
+        };
+
+        document.getElementById('new-file-btn').onclick = async () => {
+            const path = prompt("Caminho (ex: /sections/intro.tex):");
+            if (!path || !path.startsWith('/')) return alert("Deve começar com /");
+            
+            const isFirstFile = fileList.children.length === 0 || fileList.children[0].textContent.includes("Nenhum arquivo");
+
+            try {
+                const data = await request(`/projects/${projectId}/files`, {
+                    method: "POST",
+                    body: { 
+                        filePath: path, 
+                        fileContent: `% Arquivo ${path}\n\n`, 
+                        isMain: isFirstFile 
+                    }
+                });
+                await loadFiles();
+                const newLi = Array.from(fileList.children).find(li => li.textContent.includes(path.replace(/^\//, '')));
+                if (newLi) loadFileContent(data.file.id, path, newLi, data.file.is_main);
+            } catch (err) {
+                alert(`Erro ao criar: ${err.message}`);
+            }
+        };
+        loadFiles();
+    </script>
+</body>
+</html>
