@@ -152,3 +152,150 @@ create table auth_sessions (
     last_used_at timestamptz,
     check(expires_at > created_at)
 );
+
+
+insert into permissions (code, description) values
+    ('workspace.update',            'Renomear workspace e editar descricao'),
+    ('workspace.delete',            'Deletar o workspace'),
+    ('workspace.member.invite',     'Convidar usuarios por email'),
+    ('workspace.member.remove',     'Remover membros do workspace'),
+    ('workspace.member.update_role','Alterar o cargo de um membro'),
+    ('workspace.project.create',    'Criar projetos dentro do workspace')
+on conflict (code) do nothing;
+
+
+insert into permissions (code, description) values
+    ('project.view',             'Ver o projeto, mesmo com visibilidade private'),
+    ('project.update',           'Editar titulo, descricao e visibilidade'),
+    ('project.delete',           'Deletar o projeto (hard delete em cascata)'),
+    ('project.archive',          'Arquivar e desarquivar o projeto'),
+    ('project.member.manage',    'Convidar e remover membros do projeto'),
+    ('project.file.read',        'Ler arquivos do projeto'),
+    ('project.file.write',       'Criar e editar arquivos (inclui versionamento)'),
+    ('project.file.delete',      'Apagar arquivos do projeto'),
+    ('project.comment',          'Comentar no projeto, arquivo ou linha'),
+    ('project.comment.resolve',  'Marcar comentarios como resolvidos'),
+    ('project.fork',             'Criar um fork do projeto')
+on conflict (code) do nothing;
+
+insert into roles (scope, name, description) values
+    ('workspace', 'owner',     'Dono do workspace; acesso total no escopo do workspace'),
+    ('workspace', 'admin',     'Gerencia membros e projetos, mas nao deleta o workspace'),
+    ('project',   'owner',     'Dono do projeto; acesso total no escopo do projeto'),
+    ('project',   'editor',    'Le e edita arquivos, comenta e resolve comentarios'),
+    ('project',   'commenter', 'Le arquivos e comenta, mas nao edita'),
+    ('project',   'reader',    'Apenas leitura dos arquivos do projeto')
+on conflict (scope, name) do nothing;
+
+insert into role_permissions (role_id, permission_id)
+select r.id, p.id
+from roles r
+join permissions p on p.code like 'workspace.%'
+where r.scope = 'workspace' and r.name = 'owner'
+on conflict do nothing;
+
+
+insert into role_permissions (role_id, permission_id)
+select r.id, p.id
+from roles r
+join permissions p on p.code like 'workspace.%'
+where r.scope = 'workspace' and r.name = 'admin'
+  and p.code not in ('workspace.delete', 'workspace.member.update_role')
+on conflict do nothing;
+
+
+insert into role_permissions (role_id, permission_id)
+select r.id, p.id
+from roles r
+join permissions p on p.code like 'project.%'
+where r.scope = 'project' and r.name = 'owner'
+on conflict do nothing;
+
+
+insert into permissions (code, description) values
+    ('workspace.update',            'Renomear workspace e editar descricao'),
+    ('workspace.delete',            'Deletar o workspace'),
+    ('workspace.member.invite',     'Convidar usuarios por email'),
+    ('workspace.member.remove',     'Remover membros do workspace'),
+    ('workspace.member.update_role','Alterar o cargo de um membro'),
+    ('workspace.project.create',    'Criar projetos dentro do workspace')
+on conflict (code) do nothing;
+
+
+insert into permissions (code, description) values
+    ('project.view',             'Ver o projeto, mesmo com visibilidade private'),
+    ('project.update',           'Editar titulo, descricao e visibilidade'),
+    ('project.delete',           'Deletar o projeto (hard delete em cascata)'),
+    ('project.archive',          'Arquivar e desarquivar o projeto'),
+    ('project.member.manage',    'Convidar e remover membros do projeto'),
+    ('project.file.read',        'Ler arquivos do projeto'),
+    ('project.file.write',       'Criar e editar arquivos (inclui versionamento)'),
+    ('project.file.delete',      'Apagar arquivos do projeto'),
+    ('project.comment',          'Comentar no projeto, arquivo ou linha'),
+    ('project.comment.resolve',  'Marcar comentarios como resolvidos'),
+    ('project.fork',             'Criar um fork do projeto')
+on conflict (code) do nothing;
+
+insert into roles (scope, name, description) values
+    ('workspace', 'owner',     'Dono do workspace; acesso total no escopo do workspace'),
+    ('workspace', 'admin',     'Gerencia membros e projetos, mas nao deleta o workspace'),
+    ('project',   'owner',     'Dono do projeto; acesso total no escopo do projeto'),
+    ('project',   'editor',    'Le e edita arquivos, comenta e resolve comentarios'),
+    ('project',   'commenter', 'Le arquivos e comenta, mas nao edita'),
+    ('project',   'reader',    'Apenas leitura dos arquivos do projeto')
+on conflict (scope, name) do nothing;
+
+insert into role_permissions (role_id, permission_id)
+select r.id, p.id
+from roles r
+join permissions p on p.code like 'workspace.%'
+where r.scope = 'workspace' and r.name = 'owner'
+on conflict do nothing;
+
+
+insert into role_permissions (role_id, permission_id)
+select r.id, p.id
+from roles r
+join permissions p on p.code like 'workspace.%'
+where r.scope = 'workspace' and r.name = 'admin'
+  and p.code not in ('workspace.delete', 'workspace.member.update_role')
+on conflict do nothing;
+insert into role_permissions (role_id, permission_id)
+select r.id, p.id
+from roles r
+join permissions p on p.code in (
+    'project.view',
+    'project.file.read',
+    'project.file.write',
+    'project.comment',
+    'project.comment.resolve',
+    'project.fork'
+)
+where r.scope = 'project' and r.name = 'editor'
+on conflict do nothing;
+
+
+insert into role_permissions (role_id, permission_id)
+select r.id, p.id
+from roles r
+join permissions p on p.code in (
+    'project.view',
+    'project.file.read',
+    'project.comment',
+    'project.comment.resolve',
+    'project.fork'
+)
+where r.scope = 'project' and r.name = 'commenter'
+on conflict do nothing;
+
+
+insert into role_permissions (role_id, permission_id)
+select r.id, p.id
+from roles r
+join permissions p on p.code in (
+    'project.view',
+    'project.file.read',
+    'project.fork'
+)
+where r.scope = 'project' and r.name = 'reader'
+on conflict do nothing;
