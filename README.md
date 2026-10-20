@@ -11,7 +11,7 @@ Editor de LaTeX self-hosted e open-source, construído com TypeScript.
 
 ## Tech Stack
 
-- **Frontend:** HTML5, CSS3, TypeScript
+- **Frontend:** HTML5, CSS3, JavaScript
 - **Backend:** TypeScript, Express.js
 - **Runtime & Build:** Bun
 - **Sistema de Container:** Docker
