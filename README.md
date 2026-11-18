@@ -27,15 +27,15 @@ cp .env.example .env
 
 As variáveis disponíveis em [`.env.example`](.env.example) são:
 
-| Variável | Padrão | Descrição |
-| --- | --- | --- |
-| `POSTGRES_USER` | `postgres` | Usuário do banco de dados. |
-| `POSTGRES_PASSWORD` | `postgres` | Senha do banco de dados. |
-| `POSTGRES_DB` | `app_db` | Nome do banco de dados. |
-| `POSTGRES_HOST` | `postgres` | Host do banco. No Docker é o nome do serviço; rodando nativamente use `localhost`. |
-| `POSTGRES_PORT` | `5432` | Porta do banco de dados. |
-| `POSTGRES_HOST_PORT` | `5439` | Porta do PostgreSQL exposta no host (apenas Docker). |
-| `SESSION_TTL_DAYS` | `30` | Tempo de vida das sessões de autenticação, em dias. |
+| Variável             | Padrão     | Descrição                                                                          |
+| -------------------- | ---------- | ---------------------------------------------------------------------------------- |
+| `POSTGRES_USER`      | `postgres` | Usuário do banco de dados.                                                         |
+| `POSTGRES_PASSWORD`  | `postgres` | Senha do banco de dados.                                                           |
+| `POSTGRES_DB`        | `app_db`   | Nome do banco de dados.                                                            |
+| `POSTGRES_HOST`      | `postgres` | Host do banco. No Docker é o nome do serviço; rodando nativamente use `localhost`. |
+| `POSTGRES_PORT`      | `5432`     | Porta do banco de dados.                                                           |
+| `POSTGRES_HOST_PORT` | `5439`     | Porta do PostgreSQL exposta no host (apenas Docker).                               |
+| `SESSION_TTL_DAYS`   | `30`       | Tempo de vida das sessões de autenticação, em dias.                                |
 
 ## Requisitos do Sistema Host
 
@@ -50,12 +50,11 @@ A máquina que irá servir como distribuidora do sistema tem duas opções para 
 ### Rodando nativamente utilizando Bun
 
 - **Requisitos** Bun Runtime, PostgreSQL rodando, banco criado.
-- **Comandos de inicilização:** 
+- **Comandos de inicilização:**
   - `bun build ./src/client/main.ts --outfile ./public/bundle.js --target browser` (Constrói o frontend)
   - `bun run src/server/server.ts` (Inicia o backend)
 
 > O sistema não configura o PostgreSQL, quem roda local fica responsável por isso.
-
 
 Ao final, o esperado é que o serviço esteja rodando na porta 3000 da máquina do usuário, ou onde ele foi configurado
 

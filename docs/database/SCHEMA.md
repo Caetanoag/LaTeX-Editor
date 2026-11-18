@@ -9,7 +9,7 @@ Enquanto eu desenvolvia o schema do banco de dados, tomei algumas decisões que 
 
 ## Identidade de usuários
 
-A aplicação possui um sistema de identidade para gerenciamento de projetos, documentos e permissões, e nele eu tomei decisões que são essenciais tanto para queries SQL robustas quanto para a própria experiência do usuário. 
+A aplicação possui um sistema de identidade para gerenciamento de projetos, documentos e permissões, e nele eu tomei decisões que são essenciais tanto para queries SQL robustas quanto para a própria experiência do usuário.
 
 - `username` e `email` são citext, pois uma pessoa com o email `joao@gmail.com` é igual a uma com o email `Joao@gmail.com`.
 
@@ -18,7 +18,7 @@ A aplicação possui um sistema de identidade para gerenciamento de projetos, do
 - `deleted_at` é utilizado para um soft-delete, marcando o momento em que ocorreu.
 
 - FKs para `users(id)` sem `on delete` porque users nunca são hard-deleted.
-O soft delete preserva integridade referencial sem cascatas destrutivas
+  O soft delete preserva integridade referencial sem cascatas destrutivas
 
 ## Edição baseada em Cargos
 
@@ -27,10 +27,10 @@ A arquitetura da edição de arquivos é completamente baseada em quem possui qu
 - A arquitetura utilizada é a RBAC (Role-Based Acesss Control), em que as permissões (tabela `permissions`) são ações isoladas, enquanto que os cargos de usuários `roles` são apenas nomeações que possuem um conjunto de permissões. Como a relação `roles` -> `permissions` é `N:N`, criei a tabela `role_permissions`, que conecta ambas.
 
 - `roles` possuem `scope` (`workspace` ou `project`) porque papéis em níveis
-diferentes não podem se misturar. Um usuário pode ser `owner` no workspace
-e `reader` em um projeto específico, sem que as permissões de um nível
-vazem para o outro. A granularidade é por projeto: todos os arquivos de
-um projeto herdam as permissões do projeto.
+  diferentes não podem se misturar. Um usuário pode ser `owner` no workspace
+  e `reader` em um projeto específico, sem que as permissões de um nível
+  vazem para o outro. A granularidade é por projeto: todos os arquivos de
+  um projeto herdam as permissões do projeto.
 
 ## Workspaces
 
@@ -75,12 +75,12 @@ O sistema de versionamento consiste de uma tabela `file_versions` que deve ser a
 - `version_hash` deve ser gerada pelo backend, utilizando `sha256(content)`, assim criando hashes únicos por conteúdo, e evitando duplicatas.
 
 - Cada versão tem um `author_id` (quem salvou) e um `created_at` (quando).
-Juntos, formam uma linha do tempo atribuída por autor.
+  Juntos, formam uma linha do tempo atribuída por autor.
 
 - O campo `message` é opcional e não será preenchido na primeira versão do sistema, porém o objetivo é criar um sistema de versões nomeadas para fácil localização.
 
 - O insert em `file_versions` deve usar `on conflict (file_id, version_hash) do nothing`. Se o conteúdo não mudou desde a última versão, o hash é o mesmo
-e nada é inserido.
+  e nada é inserido.
 
 ## Comentários
 
@@ -91,14 +91,13 @@ A tabela `comments` guarda discussões ancordas em uma linha, arquivo completo o
 - `created_by` é not null pois, se um usuário apaga a conta, ocorre o soft delete, então a atribuição se mantém mesmo que o usuário já não exista mais.
 
 - `resolved_at` e `resolved_by` marcam quando e por quem um comentário foi
-resolvido. Um comentário resolvido não some, fica no histórico, mas
-fora da lista de pendentes. Parecido com o Github Issues.
+  resolvido. Um comentário resolvido não some, fica no histórico, mas
+  fora da lista de pendentes. Parecido com o Github Issues.
 
 - `line_number` é 1-based e armazenado como `int`. Se o arquivo mudar
-depois do comentário ser criado (linhas inseridas ou removidas antes),
-o comentário "deriva" para outra linha. Isso é aceitável na primeira versão, já que
-detectar e corrigir exigiria guardar hash da linha ou offset de caractere,
-o que é complexo. O frontend fica responsável por talvez sinalizar esse tipo de alteração.
+  depois do comentário ser criado (linhas inseridas ou removidas antes),
+  o comentário "deriva" para outra linha. Isso é aceitável na primeira versão, já que
+  detectar e corrigir exigiria guardar hash da linha ou offset de caractere,
+  o que é complexo. O frontend fica responsável por talvez sinalizar esse tipo de alteração.
 
 - Qualquer membro com a permissão `project.comment` pode comentar, centralizando o gerenciamento de acesso.
-
