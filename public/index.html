@@ -16,8 +16,11 @@
 	</head>
 	<body>
 		<section id="form-page" class="form-page">
-			<div class="form-box" style="height:392px">
+			<div class="form-box">
 				<h2>Login</h2>
+				<div id="error-container" class="error-container hidden">
+					<p>Error-Message-Template</p>
+				</div>
 				<form id="auth-form" method="post">
 					<div class="input-container">
 						<label for="email">Email Address: </label>
@@ -26,6 +29,7 @@
 							name="email"
 							id="email"
 							placeholder="email@example.com"
+							required
 						>
 					</div>
 					<div class="input-container">
@@ -35,6 +39,7 @@
 							name="password"
 							id="password"
 							placeholder="*****************"
+							required
 						>
 					</div>
 					<p>
