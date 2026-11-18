@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>LaTeX Editor | Register</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap"
+			rel="stylesheet"
+		>
+		<link rel="stylesheet" href="../style/main.css">
+		<script type="module" src="../js/main.js" defer></script>
+	</head>
+	<body>
+		<section id="form-page" class="form-page">
+			<div class="form-box" id="form-box">
+				<h2>Create Account</h2>
+				<div id="error-container" class="error-container hidden">
+					<p>Error-Message-Template</p>
+				</div>
+				<form id="register-form" method="post">
+					<div class="input-container">
+						<label for="username">Username: </label>
+						<input type="text" id="username" name="username" required>
+					</div>
+					<div class="input-container">
+						<label for="email">Email Address: </label>
+						<input
+							type="email"
+							name="email"
+							id="email"
+							placeholder="email@example.com"
+							required
+						>
+					</div>
+					<div class="input-container">
+						<label for="password">Password: </label>
+						<input
+							type="password"
+							name="password"
+							id="password"
+							placeholder="*****************"
+							minlength="12"
+							required
+						>
+					</div>
+					<div class="input-container">
+						<label for="confirm-password">Confirm password: </label>
+						<input
+							type="password"
+							name="confirm-password"
+							id="confirm-password"
+							placeholder=""
+							minlength="12"
+							required
+						>
+					</div>
+					<p>
+						Already have an account?
+						<a class="link-text" href="../index.html">Login.</a>
+					</p>
+					<button type="submit" id="form-submit" class="form-submit">
+						Create Account
+					</button>
+				</form>
+			</div>
+		</section>
+	</body>
+</html>
