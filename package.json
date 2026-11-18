@@ -12,6 +12,7 @@
 		"serve": "bun dev/serve.ts"
 	},
 	"dependencies": {
+		"@biomejs/biome": "^2.6.8",
 		"express": "^5.2.1",
 		"pg": "^8.23.1",
 		"zod": "^4.6.5"
