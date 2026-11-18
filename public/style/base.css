@@ -1,0 +1,14 @@
+:root {
+	--carbon-black: #191716ff;
+	--sunflower-gold: #e6af2eff;
+	--sunflower-gold-highlight: #efd7a1;
+	--soft-linen: #e0e2dbff;
+	--indigo-velvet: #3d348bff;
+	--grapefruit-pink: #ff7477ff;
+}
+html {
+	font: "FiraCode NerdFont", serif;
+}
+body {
+	background: var(--soft-linen);
+}
