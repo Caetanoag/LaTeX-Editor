@@ -41,7 +41,7 @@ As variáveis disponíveis em [`.env.example`](.env.example) são:
 
 A máquina que irá servir como distribuidora do sistema tem duas opções para rodar:
 
-### Utilizando Docker 
+### Utilizando Docker
 
 - **Requisitos:** Docker daemon instalado e rodando.
 - **Comando de inicialização:** `docker compose up -d`
