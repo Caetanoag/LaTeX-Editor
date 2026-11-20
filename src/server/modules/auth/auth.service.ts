@@ -1,18 +1,27 @@
 import { createHash } from "node:crypto";
 import { password } from "bun";
-import { AppError } from "../../lib/errors";
+import { AppError, NotFoundError } from "../../lib/errors";
 import {
 	createSession,
 	createUser,
+	deactivateUserAndSessions,
 	deleteSession,
+	deleteSessionById,
+	deleteSessionsForUser,
 	findUserByEmail,
+	findUserById,
 	findUserBySessionToken,
 	findUserByUsername,
+	listSessionsForUser,
 	type User,
 	updateSessionLastUsed,
 	updateUserLastLogin,
 } from "./auth.repository";
-import type { LoginInput, RegisterInput } from "./auth.schemas";
+import type {
+	DeleteAccountInput,
+	LoginInput,
+	RegisterInput,
+} from "./auth.schemas";
 
 const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS ?? 30);
 const SESSION_TTL_MS = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
@@ -28,6 +37,15 @@ export type PublicUser = {
 export type Session = {
 	token: string;
 	expiresAt: Date;
+};
+
+export type SessionInfo = {
+	id: number;
+	maskedToken: string;
+	created_at: Date;
+	expires_at: Date;
+	last_used_at: Date | null;
+	isCurrent: boolean;
 };
 
 export type AuthResult = {
@@ -158,4 +176,51 @@ export const getCurrentUser = async (token: string): Promise<PublicUser> => {
 
 	await updateSessionLastUsed(tokenHash);
 	return toPublicUser(user);
+};
+
+const maskTokenHash = (tokenHash: string): string => `…${tokenHash.slice(-4)}`;
+
+export const listAccountSessions = async (
+	userId: number,
+	currentToken: string,
+): Promise<SessionInfo[]> => {
+	const currentHash = hashSessionToken(currentToken);
+	const sessions = await listSessionsForUser(userId);
+	return sessions.map((session) => ({
+		id: session.id,
+		maskedToken: maskTokenHash(session.token_hash),
+		created_at: session.created_at,
+		expires_at: session.expires_at,
+		last_used_at: session.last_used_at,
+		isCurrent: session.token_hash === currentHash,
+	}));
+};
+
+export const revokeAccountSession = async (
+	id: number,
+	userId: number,
+): Promise<void> => {
+	const deleted = await deleteSessionById(id, userId);
+	if (!deleted) throw new NotFoundError("Session not found");
+};
+
+export const logoutAllSessions = async (userId: number): Promise<void> => {
+	await deleteSessionsForUser(userId);
+};
+
+export const deleteAccount = async (
+	userId: number,
+	input: DeleteAccountInput,
+): Promise<void> => {
+	const user = await findUserById(userId);
+	if (!user || user.deleted_at) throw new NotFoundError("User not found");
+
+	const passwordMatches = await verifyPassword(
+		input.password,
+		user.password_hash,
+	);
+	if (!passwordMatches) throw new InvalidCredentialsError();
+
+	const deactivated = await deactivateUserAndSessions(userId);
+	if (!deactivated) throw new NotFoundError("User not found");
 };
