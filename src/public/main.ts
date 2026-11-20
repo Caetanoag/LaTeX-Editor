@@ -3,3 +3,4 @@ import "./auth.register";
 import "./auth.login";
 import "./dashboard";
 import "./account";
+import "./editor";
