@@ -17,11 +17,18 @@
 		<header class="dashboard-header" id="dashboard-header">Header</header>
 		<aside class="sidebar" id="dashboard-sidebar">
 			<div class="sidebar-section">
-				<button type="button">All Projects</button>
+				<button type="button">Projects</button>
 			</div>
 			<div class="sidebar-section" id="workspaces-section">
 				<div class="sidebar-label">Workspaces</div>
 				<div id="workspace-list"></div>
+				<button
+					type="button"
+					id="create-workspace-button"
+					class="create-workspace-button"
+				>
+					+ Create Workspace
+				</button>
 			</div>
 			<div class="sidebar-section">
 				<button type="button">Archived</button>
@@ -40,7 +47,6 @@
 		</aside>
 
 		<section class="projects-list" id="projects-list">
-			<p id="dashboard-message" class="hidden"></p>
 			<table>
 				<thead>
 					<tr>
@@ -52,6 +58,36 @@
 				</thead>
 				<tbody id="projects-body"></tbody>
 			</table>
+			<p id="dashboard-message" class="hidden" role="status"></p>
 		</section>
+
+		<dialog id="workspace-dialog" class="workspace-dialog">
+			<form id="create-workspace-form">
+				<h2>Create Workspace</h2>
+				<label for="workspace-name">Name</label>
+				<input
+					type="text"
+					id="workspace-name"
+					name="name"
+					maxlength="100"
+					required
+				>
+				<label for="workspace-description">Description (optional)</label>
+				<textarea
+					id="workspace-description"
+					name="description"
+					maxlength="500"
+				></textarea>
+				<p
+					id="workspace-dialog-error"
+					class="form-error hidden"
+					role="alert"
+				></p>
+				<div class="dialog-actions">
+					<button type="button" id="cancel-workspace-button">Cancel</button>
+					<button type="submit" id="submit-workspace-button">Create</button>
+				</div>
+			</form>
+		</dialog>
 	</body>
 </html>
