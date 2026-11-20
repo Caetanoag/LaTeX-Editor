@@ -1,5 +1,5 @@
 class ProjectItem extends HTMLElement {
-	connectedCallback() {
+	async connectedCallback() {
 		const projectTitle = this.getAttribute("project-title") || "";
 		const projectOwner = Number(this.getAttribute("owner") || "");
 		const lastModified = this.getAttribute("last-modified") || "";
@@ -56,7 +56,7 @@ class ProjectItem extends HTMLElement {
 						>
 					</td>
 					<td>${projectTitle}</td>
-					<td>${getOwnerString(projectOwner)}</td>
+					<td>${await getOwnerString(projectOwner)}</td>
 					<td>${getRelativeTime(lastModified)}</td>
 				</tr>
         `;
