@@ -1,3 +1,4 @@
+import "./shared/page-guard";
 import "./auth.register";
 import "./auth.login";
-import "./components/project-list-item";
+import "./dashboard";
