@@ -5,6 +5,7 @@ import { authRouter } from "./modules/auth/auth.index";
 import { compileRouter } from "./modules/compile/compile.index";
 import { filesRouter } from "./modules/files/files.index";
 import { projectsRouter } from "./modules/projects/projects.index";
+import { usersRouter } from "./modules/users/users.index";
 import { workspacesRouter } from "./modules/workspaces/workspaces.index";
 export const app = express();
 app.use(express.json());
@@ -23,6 +24,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 app.use(express.static("public"));
 app.use("/auth", authRouter);
+app.use("/users", usersRouter);
 app.use("/workspaces", workspacesRouter);
 app.use("/projects", projectsRouter);
 app.use("/", filesRouter);
