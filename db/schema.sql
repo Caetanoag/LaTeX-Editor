@@ -155,17 +155,18 @@ create table auth_sessions (
 create table tags (
     id bigserial primary key,
     title citext not null,
-    description citext not null
+    description citext not null,
+    unique(title)
 );
 create table workspace_tags (
-    workspace_id bigint not null references workspaces(id),
-    tag_id bigint not null references tags(id),
+    workspace_id bigint not null references workspaces(id) on delete cascade,
+    tag_id bigint not null references tags(id) on delete cascade,
     unique(workspace_id, tag_id),
     primary key(workspace_id, tag_id)
 );
 create table project_tags (
-    project_id bigint not null references projects(id),
-    tag_id bigint not null references tags(id),
+    project_id bigint not null references projects(id) on delete cascade,
+    tag_id bigint not null references tags(id) on delete cascade,
     unique(project_id, tag_id),
     primary key(project_id, tag_id)
 );
