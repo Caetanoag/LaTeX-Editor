@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>LaTeX Editor | Editor</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap"
+			rel="stylesheet"
+		>
+		<link rel="stylesheet" href="../style/main.css">
+		<script type="module" src="../js/main.js" defer></script>
+	</head>
+	<body data-page="editor">
+		<header class="dashboard-header editor-header" id="editor-header">
+			<div class="editor-header-title">
+				<h1 class="dashboard-title" id="editor-project-title">Editor</h1>
+				<p id="editor-message" class="editor-message hidden" role="status"></p>
+			</div>
+			<div class="editor-actions" role="group" aria-label="Editor actions">
+				<a class="editor-back-link" href="./dashboard.html">Back to dashboard</a>
+				<button type="button" id="save-button" class="account-button" disabled>
+					Save
+				</button>
+				<button type="button" id="set-main-button" disabled>Set as main</button>
+				<button type="button" id="delete-file-button" disabled>Delete file</button>
+				<button
+					type="button"
+					id="compile-button"
+					class="account-button"
+					disabled
+				>
+					Compile PDF
+				</button>
+			</div>
+		</header>
+
+		<aside class="sidebar editor-sidebar" id="editor-sidebar">
+			<div class="sidebar-section">
+				<div class="sidebar-label">Files</div>
+				<div id="editor-file-tree" class="file-tree"></div>
+				<button type="button" id="new-file-button" class="create-button" disabled>
+					+ New File
+				</button>
+			</div>
+		</aside>
+
+		<section class="editor-pane" id="editor-pane">
+			<div class="pane-header">
+				<span id="editor-file-path">No file selected</span>
+				<span id="editor-dirty-indicator" class="dirty-indicator hidden">
+					Unsaved changes
+				</span>
+			</div>
+			<textarea
+				id="code-editor"
+				class="code-editor"
+				aria-label="LaTeX source"
+				spellcheck="false"
+				placeholder="Select a file to start editing."
+				disabled
+			></textarea>
+		</section>
+
+		<section class="preview-pane" id="preview-pane">
+			<div class="pane-header">PDF preview</div>
+			<iframe
+				id="pdf-preview"
+				class="pdf-preview"
+				title="PDF preview"
+				src="about:blank"
+			></iframe>
+			<pre id="compile-log" class="compile-log hidden" role="alert"></pre>
+		</section>
+
+		<dialog id="new-file-dialog" class="app-dialog">
+			<form id="new-file-form">
+				<h2>New file</h2>
+				<label for="new-file-path">Path</label>
+				<input
+					type="text"
+					id="new-file-path"
+					name="filePath"
+					maxlength="255"
+					placeholder="/sections/intro.tex"
+					required
+				>
+				<p
+					id="new-file-error"
+					class="form-error hidden"
+					role="alert"
+				></p>
+				<div class="dialog-actions">
+					<button type="button" id="cancel-new-file">Cancel</button>
+					<button type="submit" id="confirm-new-file">Create file</button>
+				</div>
+			</form>
+		</dialog>
+	</body>
+</html>
