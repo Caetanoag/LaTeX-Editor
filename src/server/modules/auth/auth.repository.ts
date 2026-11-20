@@ -138,6 +138,78 @@ export const updateUserLastLogin = async (userId: number): Promise<void> => {
 		[userId],
 	);
 };
+export type SessionRecord = {
+	id: number;
+	token_hash: string;
+	created_at: Date;
+	expires_at: Date;
+	last_used_at: Date | null;
+};
+
+export const listSessionsForUser = async (
+	userId: number,
+): Promise<SessionRecord[]> => {
+	const result = await pool.query<SessionRecord>(
+		`
+        select id, token_hash, created_at, expires_at, last_used_at
+        from auth_sessions
+        where user_id = $1 and expires_at > now()
+        order by last_used_at desc nulls last, created_at desc
+        `,
+		[userId],
+	);
+	return result.rows;
+};
+
+export const deleteSessionById = async (
+	id: number,
+	userId: number,
+): Promise<boolean> => {
+	const result = await pool.query(
+		`
+        delete from auth_sessions
+        where id = $1 and user_id = $2
+        `,
+		[id, userId],
+	);
+	return (result.rowCount ?? 0) > 0;
+};
+
+export const deleteSessionsForUser = async (userId: number): Promise<void> => {
+	await pool.query(`delete from auth_sessions where user_id = $1`, [userId]);
+};
+
+export const deactivateUserAndSessions = async (
+	userId: number,
+): Promise<boolean> => {
+	const client = await pool.connect();
+	try {
+		await client.query("begin");
+		const result = await client.query(
+			`
+            update users
+            set deleted_at = now(), updated_at = now()
+            where id = $1 and deleted_at is null
+            `,
+			[userId],
+		);
+		if ((result.rowCount ?? 0) === 0) {
+			await client.query("rollback");
+			return false;
+		}
+		await client.query(`delete from auth_sessions where user_id = $1`, [
+			userId,
+		]);
+		await client.query("commit");
+		return true;
+	} catch (err) {
+		await client.query("rollback");
+		throw err;
+	} finally {
+		client.release();
+	}
+};
+
 export const cleanExpiredSessions = async (
 	batchSize = 1000,
 ): Promise<number> => {
