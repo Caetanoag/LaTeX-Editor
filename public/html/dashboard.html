@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>LaTeX Editor | Dashboard</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap"
+			rel="stylesheet"
+		>
+		<link rel="stylesheet" href="../style/main.css">
+		<script type="module" src="../js/main.js" defer></script>
+	</head>
+	<body data-page="dashboard">
+		<header class="dashboard-header" id="dashboard-header">Header</header>
+		<aside class="sidebar" id="dashboard-sidebar">
+			<div class="sidebar-section">
+				<button type="button">All Projects</button>
+			</div>
+			<div class="sidebar-section">
+				<button type="button">Your Workspace</button>
+				<button type="button">Archived</button>
+			</div>
+		</aside>
+
+		<section class="projects-list" id="projects-list">
+			<table>
+				<tr>
+					<th></th>
+					<th>Title</th>
+					<th>Owner</th>
+					<th>Last Modified</th>
+				</tr>
+				<tr>
+					<td>
+						<input
+							type="checkbox"
+							name="radio-1"
+							id="checkbox-1"
+							class="table-checkbox"
+						>
+					</td>
+					<td>Project Example</td>
+					<td>Your</td>
+					<td>Just now</td>
+				</tr>
+			</table>
+		</section>
+	</body>
+</html>
