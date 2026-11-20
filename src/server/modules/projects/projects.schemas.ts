@@ -43,6 +43,10 @@ export const updateProjectSchema = z.object({
 
 export const listProjectsQuerySchema = z.object({
 	workspaceId: z.coerce.number().int().positive().optional(),
+	archived: z
+		.enum(["true", "false"])
+		.default("false")
+		.transform((value) => value === "true"),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
