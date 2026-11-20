@@ -1,4 +1,13 @@
 import { AuthService } from "./shared/auth";
+import {
+	applyCompletion,
+	type CompletionContext,
+	findCompletionContext,
+	getSuggestions,
+	type Suggestion,
+	shiftStops,
+} from "./shared/latex-completion";
+import { macros } from "./shared/latex-macros";
 import { hasValidSession } from "./shared/page-guard";
 
 type Project = {
@@ -50,6 +59,8 @@ const dirtyIndicator = document.querySelector<HTMLElement>(
 	"#editor-dirty-indicator",
 );
 const codeEditor = document.querySelector<HTMLTextAreaElement>("#code-editor");
+const autocompleteMenu =
+	document.querySelector<HTMLElement>("#autocomplete-menu");
 const pdfPreview = document.querySelector<HTMLIFrameElement>("#pdf-preview");
 const compileLog = document.querySelector<HTMLElement>("#compile-log");
 const saveButton = document.querySelector<HTMLButtonElement>("#save-button");
@@ -80,6 +91,19 @@ let canWrite = false;
 let dirty = false;
 let pdfObjectUrl: string | null = null;
 const collapsedPaths = new Set<string>();
+
+type SnippetState = {
+	stops: number[];
+	index: number;
+};
+
+let completionContext: CompletionContext | null = null;
+let suggestions: Suggestion[] = [];
+let selectedSuggestion = 0;
+let snippetState: SnippetState | null = null;
+let lastEditorLength = 0;
+let lastEditorCaret = 0;
+let autocompleteMirror: HTMLDivElement | null = null;
 
 const showMessage = (message: string): void => {
 	if (!editorMessage) return;
@@ -168,6 +192,181 @@ const refreshActions = (): void => {
 		codeEditor.disabled = !opened;
 		codeEditor.readOnly = !canWrite;
 	}
+};
+
+const closeAutocomplete = (): void => {
+	completionContext = null;
+	suggestions = [];
+	selectedSuggestion = 0;
+	autocompleteMenu?.replaceChildren();
+	autocompleteMenu?.classList.add("hidden");
+};
+
+const resetEditorTracking = (): void => {
+	closeAutocomplete();
+	snippetState = null;
+	lastEditorLength = codeEditor?.value.length ?? 0;
+	lastEditorCaret = codeEditor?.selectionStart ?? 0;
+};
+
+const getAutocompleteMirror = (): HTMLDivElement => {
+	if (autocompleteMirror) return autocompleteMirror;
+	const mirror = document.createElement("div");
+	mirror.setAttribute("aria-hidden", "true");
+	mirror.style.position = "absolute";
+	mirror.style.visibility = "hidden";
+	mirror.style.left = "-9999px";
+	mirror.style.top = "0";
+	mirror.style.whiteSpace = "pre-wrap";
+	mirror.style.wordWrap = "break-word";
+	mirror.style.overflowWrap = "break-word";
+	document.body.appendChild(mirror);
+	autocompleteMirror = mirror;
+	return mirror;
+};
+
+const positionAutocomplete = (): void => {
+	if (!codeEditor || !autocompleteMenu) return;
+
+	const mirror = getAutocompleteMirror();
+	const style = window.getComputedStyle(codeEditor);
+	mirror.style.boxSizing = style.boxSizing;
+	mirror.style.width = style.width;
+	mirror.style.padding = style.padding;
+	mirror.style.border = style.border;
+	mirror.style.fontFamily = style.fontFamily;
+	mirror.style.fontSize = style.fontSize;
+	mirror.style.fontWeight = style.fontWeight;
+	mirror.style.lineHeight = style.lineHeight;
+	mirror.style.letterSpacing = style.letterSpacing;
+	mirror.style.tabSize = style.tabSize;
+	mirror.textContent = codeEditor.value.slice(0, codeEditor.selectionStart);
+
+	const marker = document.createElement("span");
+	marker.textContent = codeEditor.value.slice(codeEditor.selectionStart) || ".";
+	mirror.appendChild(marker);
+
+	const lineHeight = Number.parseFloat(style.lineHeight);
+	const left = marker.offsetLeft - codeEditor.scrollLeft;
+	const top =
+		marker.offsetTop -
+		codeEditor.scrollTop +
+		(Number.isFinite(lineHeight) ? lineHeight : 0);
+
+	autocompleteMenu.style.bottom = "auto";
+	if (!Number.isFinite(left) || !Number.isFinite(top)) {
+		autocompleteMenu.style.left = "1rem";
+		autocompleteMenu.style.top = "auto";
+		autocompleteMenu.style.bottom = "1rem";
+		return;
+	}
+
+	const pane = document.querySelector<HTMLElement>("#editor-pane");
+	const maxLeft = pane
+		? pane.clientWidth - autocompleteMenu.offsetWidth - 8
+		: left;
+	const maxTop = pane
+		? pane.clientHeight - autocompleteMenu.offsetHeight - 8
+		: top;
+	autocompleteMenu.style.left = `${Math.max(
+		0,
+		Math.min(codeEditor.offsetLeft + left, maxLeft),
+	)}px`;
+	autocompleteMenu.style.top = `${Math.max(
+		0,
+		Math.min(codeEditor.offsetTop + top, maxTop),
+	)}px`;
+};
+
+const acceptSuggestion = (index: number): void => {
+	if (!codeEditor || !completionContext) return;
+	const suggestion = suggestions[index];
+	if (!suggestion) return;
+
+	const previousLength = codeEditor.value.length;
+	const { value, stops } = applyCompletion(
+		codeEditor.value,
+		completionContext,
+		suggestion,
+	);
+	codeEditor.value = value;
+	const fallback = Math.min(
+		completionContext.end + (value.length - previousLength),
+		value.length,
+	);
+	const caret = stops[0] ?? fallback;
+
+	codeEditor.focus();
+	codeEditor.setSelectionRange(caret, caret);
+	snippetState = stops.length > 0 ? { stops, index: 0 } : null;
+	lastEditorLength = value.length;
+	lastEditorCaret = caret;
+	setDirty(true);
+	refreshActions();
+	closeAutocomplete();
+};
+
+const renderAutocomplete = (): void => {
+	if (!autocompleteMenu) return;
+	autocompleteMenu.replaceChildren();
+	if (suggestions.length === 0) {
+		closeAutocomplete();
+		return;
+	}
+
+	suggestions.forEach((item, index) => {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "autocomplete-item";
+		if (index === selectedSuggestion) button.classList.add("is-active");
+		button.textContent = item.text;
+		button.setAttribute("role", "option");
+		button.setAttribute("aria-selected", String(index === selectedSuggestion));
+		button.addEventListener("mousedown", (event) => event.preventDefault());
+		button.addEventListener("click", () => acceptSuggestion(index));
+		autocompleteMenu.appendChild(button);
+	});
+
+	autocompleteMenu.classList.remove("hidden");
+	positionAutocomplete();
+};
+
+const moveSuggestion = (step: number): void => {
+	if (suggestions.length === 0) return;
+	selectedSuggestion =
+		(selectedSuggestion + step + suggestions.length) % suggestions.length;
+	renderAutocomplete();
+};
+
+const updateAutocomplete = (): void => {
+	if (!codeEditor || codeEditor.readOnly || codeEditor.disabled) {
+		closeAutocomplete();
+		return;
+	}
+
+	const context = findCompletionContext(
+		codeEditor.value,
+		codeEditor.selectionStart,
+	);
+	if (!context) {
+		closeAutocomplete();
+		return;
+	}
+
+	const next = getSuggestions(context, macros);
+	if (next.length === 0) {
+		closeAutocomplete();
+		return;
+	}
+
+	const same =
+		completionContext?.start === context.start &&
+		completionContext?.kind === context.kind &&
+		completionContext?.query === context.query;
+	completionContext = context;
+	suggestions = next;
+	selectedSuggestion = same ? Math.min(selectedSuggestion, next.length - 1) : 0;
+	renderAutocomplete();
 };
 
 const createNode = (name: string, path: string): TreeNode => ({
@@ -317,6 +516,7 @@ const openFile = async (file: FileMeta): Promise<void> => {
 		);
 		activeFile = loaded;
 		if (codeEditor) codeEditor.value = loaded.file_content;
+		resetEditorTracking();
 		if (filePathLabel) filePathLabel.textContent = loaded.file_path;
 		setDirty(false);
 		renderTree();
@@ -455,6 +655,7 @@ deleteFileButton?.addEventListener("click", () => {
 			if (activeFile?.id === file.id) {
 				activeFile = undefined;
 				if (codeEditor) codeEditor.value = "";
+				resetEditorTracking();
 				if (filePathLabel) filePathLabel.textContent = "No file selected";
 				setDirty(false);
 			}
@@ -522,30 +723,95 @@ newFileForm?.addEventListener("submit", async (event) => {
 });
 
 codeEditor?.addEventListener("input", () => {
+	if (!codeEditor) return;
+	const caret = codeEditor.selectionStart;
+	if (snippetState) {
+		snippetState = {
+			...snippetState,
+			stops: shiftStops(
+				snippetState.stops,
+				lastEditorCaret,
+				codeEditor.value.length - lastEditorLength,
+			),
+		};
+	}
+	lastEditorLength = codeEditor.value.length;
+	lastEditorCaret = caret;
 	setDirty(true);
 	refreshActions();
+	updateAutocomplete();
 });
 
-codeEditor?.addEventListener("keydown", (event) => {
-	if (event.key === "Tab") {
-		if (
-			event.currentTarget instanceof HTMLTextAreaElement &&
-			event.currentTarget.readOnly
-		) {
-			return;
-		}
-		event.preventDefault();
-		const textarea = event.currentTarget;
-		if (!(textarea instanceof HTMLTextAreaElement)) return;
-		textarea.setRangeText(
-			"  ",
-			textarea.selectionStart,
-			textarea.selectionEnd,
-			"end",
-		);
-		setDirty(true);
-		refreshActions();
+codeEditor?.addEventListener("click", () => {
+	if (!codeEditor) return;
+	if (
+		snippetState &&
+		codeEditor.selectionStart !== snippetState.stops[snippetState.index]
+	) {
+		snippetState = null;
 	}
+	updateAutocomplete();
+});
+
+codeEditor?.addEventListener("keyup", (event) => {
+	if (!codeEditor) return;
+	if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+	if (
+		snippetState &&
+		codeEditor.selectionStart !== snippetState.stops[snippetState.index]
+	) {
+		snippetState = null;
+	}
+	updateAutocomplete();
+});
+
+codeEditor?.addEventListener("blur", closeAutocomplete);
+
+codeEditor?.addEventListener("keydown", (event) => {
+	if (!codeEditor) return;
+	if (event.key === "Escape" && completionContext) {
+		event.preventDefault();
+		closeAutocomplete();
+		return;
+	}
+	if (event.key === "ArrowDown" && suggestions.length > 0) {
+		event.preventDefault();
+		moveSuggestion(1);
+		return;
+	}
+	if (event.key === "ArrowUp" && suggestions.length > 0) {
+		event.preventDefault();
+		moveSuggestion(-1);
+		return;
+	}
+	if (
+		(event.key === "Enter" || event.key === "Tab") &&
+		completionContext &&
+		suggestions.length > 0
+	) {
+		event.preventDefault();
+		acceptSuggestion(selectedSuggestion);
+		return;
+	}
+	if (event.key !== "Tab") return;
+	if (snippetState && snippetState.index < snippetState.stops.length) {
+		event.preventDefault();
+		const stop = snippetState.stops[snippetState.index];
+		snippetState = { ...snippetState, index: snippetState.index + 1 };
+		codeEditor.setSelectionRange(stop, stop);
+		lastEditorCaret = stop;
+		return;
+	}
+	if (codeEditor.readOnly) return;
+	event.preventDefault();
+	codeEditor.setRangeText(
+		"  ",
+		codeEditor.selectionStart,
+		codeEditor.selectionEnd,
+		"end",
+	);
+	setDirty(true);
+	refreshActions();
 });
 
 document.addEventListener("keydown", (event) => {
