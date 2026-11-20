@@ -3,10 +3,12 @@ import { findMemberRole as findWorkspaceMemberRole } from "../workspaces/workspa
 import {
 	deleteProject as archiveProjectRepo,
 	createProject as createProjectRepo,
+	findArchivedProjectById,
 	findProjectById,
 	findProjectMemberRole,
 	listProjectsForUser,
 	type Project,
+	restoreProject as restoreProjectRepo,
 	updateProject as updatedProjectRepo,
 } from "./projects.repository";
 import type {
@@ -77,9 +79,10 @@ export const createProject = async (
 
 export const listProjects = async (
 	userId: number,
-	workspaceId: number,
+	workspaceId: number | undefined,
+	archived = false,
 ): Promise<Project[]> => {
-	return listProjectsForUser(userId, workspaceId);
+	return listProjectsForUser(userId, workspaceId, archived);
 };
 
 export const getProjectInformation = async (
@@ -118,4 +121,19 @@ export const deleteProject = async (
 		throw new ForbiddenError("Only the owner can delete this project");
 	}
 	await archiveProjectRepo(projectId);
+};
+
+export const restoreProject = async (
+	projectId: number,
+	userId: number,
+): Promise<Project> => {
+	const project = await findArchivedProjectById(projectId);
+	if (!project) throw new NotFoundError("Archived project not found");
+	if (project.owner_id !== userId) {
+		throw new ForbiddenError("Only the owner can restore this project");
+	}
+
+	const restored = await restoreProjectRepo(projectId);
+	if (!restored) throw new NotFoundError("Archived project not found");
+	return restored;
 };
