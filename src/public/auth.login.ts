@@ -56,8 +56,16 @@ if (loginForm && errorBox) {
 			console.log(
 				`User ${response.user.username} logged in (${response.user.created_at})`,
 			);
-			const sessionRaw = JSON.stringify(response.session);
-			localStorage.setItem("session", sessionRaw);
+			const requestedPath = new URLSearchParams(window.location.search).get(
+				"next",
+			);
+			const destination =
+				requestedPath?.startsWith("/") &&
+				new URL(requestedPath, window.location.origin).origin ===
+					window.location.origin
+					? requestedPath
+					: "html/dashboard.html";
+			window.location.assign(destination);
 		} catch (err) {
 			if (err instanceof AuthRequestError) {
 				showError(apiErrorMessages[err.code] ?? `Error: ${err.message}`);
