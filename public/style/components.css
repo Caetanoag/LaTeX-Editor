@@ -488,6 +488,9 @@ body[data-page="editor"] {
 	padding: 1rem;
 	box-sizing: border-box;
 }
+.editor-pane {
+	position: relative;
+}
 .pane-header {
 	display: flex;
 	align-items: center;
@@ -527,6 +530,36 @@ body[data-page="editor"] {
 }
 .code-editor:disabled {
 	cursor: not-allowed;
+}
+.autocomplete-menu {
+	position: absolute;
+	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	max-height: 12rem;
+	overflow-y: auto;
+	padding: 0.3rem;
+	box-sizing: border-box;
+	border: 1px solid var(--carbon-black);
+	border-radius: 8px;
+	background-color: var(--soft-linen);
+	box-shadow: 0 8px 20px rgb(0 0 0 / 15%);
+}
+.autocomplete-item {
+	border: 0;
+	border-radius: 4px;
+	padding: 0.3rem 0.5rem;
+	background-color: transparent;
+	font-family: "Fira Code", monospace;
+	font-size: 0.85rem;
+	text-align: left;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.autocomplete-item:hover,
+.autocomplete-item.is-active {
+	background-color: var(--sunflower-gold);
 }
 .pdf-preview {
 	flex: 1;
