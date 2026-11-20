@@ -30,7 +30,7 @@ const validate = (errors: ValidationError[]): boolean => {
 };
 
 const apiErrorMessages: Record<string, string> = {
-	invalid_credentials: "Error: invalid email or password"
+	invalid_credentials: "Error: invalid email or password",
 };
 
 if (loginForm && errorBox) {
@@ -56,6 +56,8 @@ if (loginForm && errorBox) {
 			console.log(
 				`User ${response.user.username} logged in (${response.user.created_at})`,
 			);
+			const sessionRaw = JSON.stringify(response.session);
+			localStorage.setItem("session", sessionRaw);
 		} catch (err) {
 			if (err instanceof AuthRequestError) {
 				showError(apiErrorMessages[err.code] ?? `Error: ${err.message}`);
