@@ -10,6 +10,7 @@ import {
 	createProject,
 	getProjectInformation,
 	listProjects,
+	restoreProject,
 	updateProject,
 } from "./projects.service";
 
@@ -24,8 +25,8 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/", async (req, res) => {
-	const { workspaceId } = listProjectsQuerySchema.parse(req.query);
-	const projects = await listProjects(req.user!.id, workspaceId);
+	const { workspaceId, archived } = listProjectsQuerySchema.parse(req.query);
+	const projects = await listProjects(req.user!.id, workspaceId, archived);
 	res.json({ projects });
 });
 
@@ -46,5 +47,11 @@ router.delete("/:id", async (req, res) => {
 	const projectId = Number(req.params.id);
 	await deleteProject(projectId, req.user!.id);
 	res.status(204).end();
+});
+
+router.post("/:id/restore", async (req, res) => {
+	const projectId = Number(req.params.id);
+	const project = await restoreProject(projectId, req.user!.id);
+	res.json({ project });
 });
 export default router;
