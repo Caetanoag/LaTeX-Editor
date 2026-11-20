@@ -78,19 +78,34 @@
 	position: sticky;
 	top: 0;
 
-	display: grid;
-	grid-template-columns: 1fr;
-	grid-template-rows: 1fr 1fr;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+
 	background-color: #f4f4f4;
 	padding: 1rem;
 	box-sizing: border-box;
 }
 
-.sidebar > div {
-	display: grid;
-	grid-template-columns: 1fr;
-	grid-template-rows: 1fr 1fr;
+.sidebar .sidebar-section {
+	display: flex;
+	flex-direction: column;
 	gap: 0.5rem;
+	border-bottom: 1px solid grey;
+	border-top: 1px solid grey;
+}
+
+.sidebar button {
+	background-color: #f4f4f4;
+	border: none;
+	padding: 0.6rem 1rem;
+	text-align: left;
+	cursor: pointer;
+	border-radius: 8px;
+}
+
+.sidebar button:hover {
+	background-color: #e4e4e4;
 }
 .projects-list {
 	grid-area: content;
