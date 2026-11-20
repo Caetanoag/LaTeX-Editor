@@ -16,8 +16,15 @@
 	<body data-page="dashboard">
 		<header class="dashboard-header" id="dashboard-header">Header</header>
 		<aside class="sidebar" id="dashboard-sidebar">
-			<div class="sidebar-section">
-				<button type="button">Projects</button>
+			<div class="sidebar-section" id="projects-section">
+				<div class="sidebar-label">Projects</div>
+				<button
+					type="button"
+					id="create-project-button"
+					class="create-button"
+				>
+					+ Create Project
+				</button>
 			</div>
 			<div class="sidebar-section" id="workspaces-section">
 				<div class="sidebar-label">Workspaces</div>
@@ -25,7 +32,7 @@
 				<button
 					type="button"
 					id="create-workspace-button"
-					class="create-workspace-button"
+					class="create-button"
 				>
 					+ Create Workspace
 				</button>
@@ -61,7 +68,7 @@
 			<p id="dashboard-message" class="hidden" role="status"></p>
 		</section>
 
-		<dialog id="workspace-dialog" class="workspace-dialog">
+		<dialog id="workspace-dialog" class="app-dialog">
 			<form id="create-workspace-form">
 				<h2>Create Workspace</h2>
 				<label for="workspace-name">Name</label>
@@ -86,6 +93,41 @@
 				<div class="dialog-actions">
 					<button type="button" id="cancel-workspace-button">Cancel</button>
 					<button type="submit" id="submit-workspace-button">Create</button>
+				</div>
+			</form>
+		</dialog>
+
+		<dialog id="project-dialog" class="app-dialog">
+			<form id="create-project-form">
+				<h2>Create Project</h2>
+				<label for="project-title">Title</label>
+				<input
+					type="text"
+					id="project-title"
+					name="title"
+					maxlength="200"
+					required
+				>
+				<label for="project-description">Description (optional)</label>
+				<textarea
+					id="project-description"
+					name="description"
+					maxlength="1000"
+				></textarea>
+				<label for="project-visibility">Visibility</label>
+				<select id="project-visibility" name="visibility">
+					<option value="private">Private</option>
+					<option value="workspace">Workspace</option>
+					<option value="public">Public</option>
+				</select>
+				<p
+					id="project-dialog-error"
+					class="form-error hidden"
+					role="alert"
+				></p>
+				<div class="dialog-actions">
+					<button type="button" id="cancel-project-button">Cancel</button>
+					<button type="submit" id="submit-project-button">Create</button>
 				</div>
 			</form>
 		</dialog>
