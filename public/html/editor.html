@@ -54,14 +54,17 @@
 					Unsaved changes
 				</span>
 			</div>
-			<textarea
-				id="code-editor"
-				class="code-editor"
-				aria-label="LaTeX source"
-				spellcheck="false"
-				placeholder="Select a file to start editing."
-				disabled
-			></textarea>
+			<div class="editor-input-wrap">
+				<pre id="highlight-layer" class="highlight-layer" aria-hidden="true"></pre>
+				<textarea
+					id="code-editor"
+					class="code-editor"
+					aria-label="LaTeX source"
+					spellcheck="false"
+					placeholder="Select a file to start editing."
+					disabled
+				></textarea>
+			</div>
 			<div
 				id="autocomplete-menu"
 				class="autocomplete-menu hidden"
