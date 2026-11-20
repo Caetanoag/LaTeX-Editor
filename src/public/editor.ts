@@ -7,6 +7,7 @@ import {
 	type Suggestion,
 	shiftStops,
 } from "./shared/latex-completion";
+import { highlightLatex } from "./shared/latex-highlight";
 import { macros } from "./shared/latex-macros";
 import { hasValidSession } from "./shared/page-guard";
 
@@ -61,6 +62,7 @@ const dirtyIndicator = document.querySelector<HTMLElement>(
 const codeEditor = document.querySelector<HTMLTextAreaElement>("#code-editor");
 const autocompleteMenu =
 	document.querySelector<HTMLElement>("#autocomplete-menu");
+const highlightLayer = document.querySelector<HTMLElement>("#highlight-layer");
 const pdfPreview = document.querySelector<HTMLIFrameElement>("#pdf-preview");
 const compileLog = document.querySelector<HTMLElement>("#compile-log");
 const saveButton = document.querySelector<HTMLButtonElement>("#save-button");
@@ -209,6 +211,28 @@ const resetEditorTracking = (): void => {
 	lastEditorCaret = codeEditor?.selectionStart ?? 0;
 };
 
+const syncHighlightScroll = (): void => {
+	if (!codeEditor || !highlightLayer) return;
+	highlightLayer.scrollTop = codeEditor.scrollTop;
+	highlightLayer.scrollLeft = codeEditor.scrollLeft;
+};
+
+const renderHighlight = (): void => {
+	if (!codeEditor || !highlightLayer) return;
+	highlightLayer.replaceChildren();
+	for (const token of highlightLatex(codeEditor.value)) {
+		if (token.type === "text") {
+			highlightLayer.appendChild(document.createTextNode(token.value));
+			continue;
+		}
+		const span = document.createElement("span");
+		span.className = `latex-${token.type}`;
+		span.textContent = token.value;
+		highlightLayer.appendChild(span);
+	}
+	syncHighlightScroll();
+};
+
 const getAutocompleteMirror = (): HTMLDivElement => {
 	if (autocompleteMirror) return autocompleteMirror;
 	const mirror = document.createElement("div");
@@ -262,6 +286,14 @@ const positionAutocomplete = (): void => {
 	}
 
 	const pane = document.querySelector<HTMLElement>("#editor-pane");
+	const paneRect = pane?.getBoundingClientRect();
+	const editorRect = codeEditor.getBoundingClientRect();
+	const editorLeft = paneRect
+		? editorRect.left - paneRect.left
+		: codeEditor.offsetLeft;
+	const editorTop = paneRect
+		? editorRect.top - paneRect.top
+		: codeEditor.offsetTop;
 	const maxLeft = pane
 		? pane.clientWidth - autocompleteMenu.offsetWidth - 8
 		: left;
@@ -270,11 +302,11 @@ const positionAutocomplete = (): void => {
 		: top;
 	autocompleteMenu.style.left = `${Math.max(
 		0,
-		Math.min(codeEditor.offsetLeft + left, maxLeft),
+		Math.min(editorLeft + left, maxLeft),
 	)}px`;
 	autocompleteMenu.style.top = `${Math.max(
 		0,
-		Math.min(codeEditor.offsetTop + top, maxTop),
+		Math.min(editorTop + top, maxTop),
 	)}px`;
 };
 
@@ -290,6 +322,7 @@ const acceptSuggestion = (index: number): void => {
 		suggestion,
 	);
 	codeEditor.value = value;
+	renderHighlight();
 	const fallback = Math.min(
 		completionContext.end + (value.length - previousLength),
 		value.length,
@@ -517,6 +550,7 @@ const openFile = async (file: FileMeta): Promise<void> => {
 		activeFile = loaded;
 		if (codeEditor) codeEditor.value = loaded.file_content;
 		resetEditorTracking();
+		renderHighlight();
 		if (filePathLabel) filePathLabel.textContent = loaded.file_path;
 		setDirty(false);
 		renderTree();
@@ -656,6 +690,7 @@ deleteFileButton?.addEventListener("click", () => {
 				activeFile = undefined;
 				if (codeEditor) codeEditor.value = "";
 				resetEditorTracking();
+				renderHighlight();
 				if (filePathLabel) filePathLabel.textContent = "No file selected";
 				setDirty(false);
 			}
@@ -739,6 +774,7 @@ codeEditor?.addEventListener("input", () => {
 	lastEditorCaret = caret;
 	setDirty(true);
 	refreshActions();
+	renderHighlight();
 	updateAutocomplete();
 });
 
@@ -766,6 +802,7 @@ codeEditor?.addEventListener("keyup", (event) => {
 });
 
 codeEditor?.addEventListener("blur", closeAutocomplete);
+codeEditor?.addEventListener("scroll", syncHighlightScroll);
 
 codeEditor?.addEventListener("keydown", (event) => {
 	if (!codeEditor) return;
