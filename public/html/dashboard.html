@@ -19,8 +19,11 @@
 			<div class="sidebar-section">
 				<button type="button">All Projects</button>
 			</div>
+			<div class="sidebar-section" id="workspaces-section">
+				<div class="sidebar-label">Workspaces</div>
+				<div id="workspace-list"></div>
+			</div>
 			<div class="sidebar-section">
-				<button type="button">Your Workspace</button>
 				<button type="button">Archived</button>
 			</div>
 			<div class="sidebar-section">
@@ -37,19 +40,17 @@
 		</aside>
 
 		<section class="projects-list" id="projects-list">
+			<p id="dashboard-message" class="hidden"></p>
 			<table>
-				<tr>
-					<th></th>
-					<th>Title</th>
-					<th>Owner</th>
-					<th>Last Modified</th>
-				</tr>
-				<tr
-					is="project-item"
-					project-title="Teste"
-					owner="Me"
-					last-modified="2026-11-20T10:18:19"
-				></tr>
+				<thead>
+					<tr>
+						<th></th>
+						<th>Title</th>
+						<th>Owner</th>
+						<th>Last Modified</th>
+					</tr>
+				</thead>
+				<tbody id="projects-body"></tbody>
 			</table>
 		</section>
 	</body>
