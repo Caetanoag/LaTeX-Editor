@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>LaTeX Editor | Account</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap"
+			rel="stylesheet"
+		>
+		<link rel="stylesheet" href="../style/main.css">
+		<script type="module" src="../js/main.js" defer></script>
+	</head>
+	<body data-page="account">
+		<header class="account-header">
+			<h1>Account</h1>
+			<a class="account-back-link" href="./dashboard.html">Back to dashboard</a>
+		</header>
+
+		<main class="account-page">
+			<p id="account-message" class="hidden" role="status"></p>
+
+			<section class="account-card">
+				<div class="account-card-header">
+					<h2>Profile</h2>
+					<button type="button" id="logout-button" class="account-button">
+						Log out
+					</button>
+				</div>
+				<dl class="account-details">
+					<div class="account-detail">
+						<dt>Username</dt>
+						<dd id="account-username">—</dd>
+					</div>
+					<div class="account-detail">
+						<dt>Email</dt>
+						<dd id="account-email">—</dd>
+					</div>
+					<div class="account-detail">
+						<dt>Member since</dt>
+						<dd id="account-created">—</dd>
+					</div>
+					<div class="account-detail">
+						<dt>Last login</dt>
+						<dd id="account-last-login">—</dd>
+					</div>
+				</dl>
+			</section>
+
+			<section class="account-card">
+				<div class="account-card-header">
+					<h2>Sessions</h2>
+					<button
+						type="button"
+						id="logout-all-button"
+						class="account-button"
+					>
+						Log out from all devices
+					</button>
+				</div>
+				<table class="account-sessions-table">
+					<thead>
+						<tr>
+							<th>Token (hash)</th>
+							<th>Created</th>
+							<th>Expires</th>
+							<th>Last used</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody id="sessions-body"></tbody>
+				</table>
+			</section>
+
+			<section class="account-card account-danger-zone">
+				<h2>Danger zone</h2>
+				<p>
+					Deleting your account signs you out everywhere. This cannot be undone
+					from this page.
+				</p>
+				<button
+					type="button"
+					id="delete-account-button"
+					class="account-button account-button-danger"
+				>
+					Delete account
+				</button>
+			</section>
+		</main>
+
+		<dialog id="delete-account-dialog" class="app-dialog">
+			<form id="delete-account-form">
+				<h2>Delete account</h2>
+				<label for="delete-account-password">Confirm your password</label>
+				<input
+					type="password"
+					id="delete-account-password"
+					name="password"
+					autocomplete="current-password"
+					required
+				>
+				<p
+					id="delete-account-error"
+					class="form-error hidden"
+					role="alert"
+				></p>
+				<div class="dialog-actions">
+					<button type="button" id="cancel-delete-account">Cancel</button>
+					<button type="submit" id="confirm-delete-account">
+						Delete account
+					</button>
+				</div>
+			</form>
+		</dialog>
+	</body>
+</html>
