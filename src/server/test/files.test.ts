@@ -24,7 +24,7 @@ describe("Files", () => {
 		const { res, data } = await api(`/projects/${projectId}/files`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json", ...authHeaders(token) },
-			body: JSON.stringify({ filePath, fileContent: "Hello", isMain: true }),
+			body: JSON.stringify({ filePath, fileContent: "Hello" }),
 		});
 		expect(res.status).toBe(201);
 		expect(data.file.file_path).toBe(filePath);
@@ -56,7 +56,6 @@ describe("Files", () => {
 			body: JSON.stringify({
 				filePath: path1,
 				fileContent: "Main",
-				isMain: true,
 			}),
 		});
 		const { data: f2 } = await api(`/projects/${projectId}/files`, {
@@ -95,16 +94,10 @@ describe("Files", () => {
 	it("prevents deleting the only file", async () => {
 		const { token } = await registerUser();
 		const projectId = await setup(token);
-		const { data: f } = await api(`/projects/${projectId}/files`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json", ...authHeaders(token) },
-			body: JSON.stringify({
-				filePath: `/only-${uid()}.tex`,
-				fileContent: "Only",
-				isMain: true,
-			}),
+		const { data: filesData } = await api(`/projects/${projectId}/files`, {
+			headers: authHeaders(token),
 		});
-		const id = f.file.id;
+		const id = filesData.files[0].id;
 		const { res, data } = await api(`/files/${id}`, {
 			method: "DELETE",
 			headers: authHeaders(token),
