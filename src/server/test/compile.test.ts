@@ -17,20 +17,13 @@ async function setup(token: string) {
 }
 
 describe("Compile", () => {
-	it("compiles a valid LaTeX file", async () => {
+	it("compiles the default main LaTeX file", async () => {
 		const { token } = await registerUser();
 		const projectId = await setup(token);
-		const { data: fileData } = await api(`/projects/${projectId}/files`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json", ...authHeaders(token) },
-			body: JSON.stringify({
-				filePath: `/main-${uid()}.tex`,
-				fileContent:
-					"\\documentclass{article}\\begin{document}Hello\\end{document}",
-				isMain: true,
-			}),
+		const { data: filesData } = await api(`/projects/${projectId}/files`, {
+			headers: authHeaders(token),
 		});
-		const fileId = fileData.file.id;
+		const fileId = filesData.files[0].id;
 		const { res } = await api(`/files/${fileId}/compile`, {
 			method: "POST",
 			headers: authHeaders(token),
@@ -46,38 +39,20 @@ describe("Compile", () => {
 			method: "POST",
 			headers: { "Content-Type": "application/json", ...authHeaders(token) },
 			body: JSON.stringify({
-				filePath: `/main-${uid()}.tex`,
+				filePath: `/invalid-${uid()}.tex`,
 				fileContent: "\\invalidcommand{",
-				isMain: true,
 			}),
 		});
 		const fileId = fileData.file.id;
+		await api(`/files/${fileId}/main`, {
+			method: "PATCH",
+			headers: authHeaders(token),
+		});
 		const { res, data } = await api(`/files/${fileId}/compile`, {
 			method: "POST",
 			headers: authHeaders(token),
 		});
 		expect(res.status).toBe(422);
 		expect(data.error).toBe("compile_error");
-	});
-
-	it("fails when no main file", async () => {
-		const { token } = await registerUser();
-		const projectId = await setup(token);
-		const { data: fileData } = await api(`/projects/${projectId}/files`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json", ...authHeaders(token) },
-			body: JSON.stringify({
-				filePath: `/main-${uid()}.tex`,
-				fileContent: "content",
-				isMain: false,
-			}),
-		});
-		const fileId = fileData.file.id;
-		const { res, data } = await api(`/files/${fileId}/compile`, {
-			method: "POST",
-			headers: authHeaders(token),
-		});
-		expect(res.status).toBe(409);
-		expect(data.error).toBe("conflict");
 	});
 });
