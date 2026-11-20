@@ -14,7 +14,33 @@
 		<script type="module" src="../js/main.js" defer></script>
 	</head>
 	<body data-page="dashboard">
-		<header class="dashboard-header" id="dashboard-header">Header</header>
+		<header class="dashboard-header" id="dashboard-header">
+			<h1 class="dashboard-title" id="dashboard-title">Header</h1>
+			<div
+				class="selection-card hidden"
+				id="selection-card"
+				role="group"
+				aria-label="Project selection actions"
+			>
+				<span class="selection-count" id="selection-count"></span>
+				<div class="selection-actions">
+					<button type="button" id="edit-project-button">Edit</button>
+					<button type="button" id="archive-projects-button">Archive</button>
+				</div>
+			</div>
+			<div
+				class="selection-card hidden"
+				id="workspace-selection-card"
+				role="group"
+				aria-label="Selected workspace actions"
+			>
+				<span class="selection-count" id="workspace-selection-name"></span>
+				<div class="selection-actions">
+					<button type="button" id="edit-workspace-button">Edit</button>
+					<button type="button" id="delete-workspace-button">Delete</button>
+				</div>
+			</div>
+		</header>
 		<aside class="sidebar" id="dashboard-sidebar">
 			<div class="sidebar-section" id="projects-section">
 				<div class="sidebar-label">Projects</div>
@@ -70,7 +96,7 @@
 
 		<dialog id="workspace-dialog" class="app-dialog">
 			<form id="create-workspace-form">
-				<h2>Create Workspace</h2>
+				<h2 id="workspace-dialog-title">Create Workspace</h2>
 				<label for="workspace-name">Name</label>
 				<input
 					type="text"
@@ -99,7 +125,7 @@
 
 		<dialog id="project-dialog" class="app-dialog">
 			<form id="create-project-form">
-				<h2>Create Project</h2>
+				<h2 id="project-dialog-title">Create Project</h2>
 				<label for="project-title">Title</label>
 				<input
 					type="text"
