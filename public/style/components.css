@@ -181,6 +181,50 @@
 .dashboard-header {
 	grid-area: header;
 	background-color: #f4f4f4;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.75rem 1.25rem;
+	border-bottom: 1px solid;
+	box-shadow: 0 2px 8px;
+}
+.dashboard-title {
+	margin: 0;
+	font-size: 1.35rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+}
+.selection-card {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid;
+	border-radius: 8px;
+	box-shadow: 0 1px 4px;
+}
+.selection-card.hidden {
+	display: none;
+}
+.selection-count {
+	font-size: 0.9rem;
+	font-weight: 600;
+}
+.selection-actions {
+	display: flex;
+	gap: 0.5rem;
+}
+.selection-actions button {
+	font: inherit;
+	padding: 0.35rem 0.75rem;
+	border: 1px solid;
+	border-radius: 6px;
+	cursor: pointer;
+}
+.selection-actions button:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
 }
 
 .table-checkbox {
