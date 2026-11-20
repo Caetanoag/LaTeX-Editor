@@ -17,6 +17,13 @@ const PROJECT_COLUMNS = `
   id, workspace_id, owner_id, title, description, visibility,
   forked_from_id, created_at, updated_at, archived_at
 `;
+const DEFAULT_MAIN_FILE_PATH = "/main.tex";
+const DEFAULT_MAIN_FILE_CONTENT = `\\documentclass{article}
+
+\\begin{document}
+\tHello, world!
+\\end{document}
+`;
 
 export const findProjectMemberRole = async (
 	projectId: number,
@@ -77,6 +84,14 @@ export const createProject = async (input: {
             `,
 
 			[project.id, input.ownerId, ownerRoleId, input.ownerId],
+		);
+
+		await client.query(
+			`
+            insert into project_files (project_id, file_path, file_content, is_main)
+            values ($1, $2, $3, true)
+            `,
+			[project.id, DEFAULT_MAIN_FILE_PATH, DEFAULT_MAIN_FILE_CONTENT],
 		);
 		await client.query("commit");
 		return project;
