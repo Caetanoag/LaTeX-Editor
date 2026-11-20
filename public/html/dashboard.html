@@ -64,7 +64,9 @@
 				</button>
 			</div>
 			<div class="sidebar-section">
-				<button type="button">Archived</button>
+				<button type="button" id="archived-button" aria-pressed="false">
+					Archived
+				</button>
 			</div>
 			<div class="sidebar-section">
 				<button type="button" onclick="window.location.href = './account.html'">
@@ -83,11 +85,11 @@
 			<table>
 				<thead>
 					<tr>
-						<th></th>
+						<th id="selection-header"></th>
 						<th>Title</th>
 						<th>Owner</th>
 						<th>Last Modified</th>
-						<th>Editor</th>
+						<th id="actions-header">Editor</th>
 					</tr>
 				</thead>
 				<tbody id="projects-body"></tbody>
