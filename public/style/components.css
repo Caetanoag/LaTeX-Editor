@@ -107,6 +107,17 @@
 .sidebar button:hover {
 	background-color: #e4e4e4;
 }
+.sidebar button[aria-pressed="true"] {
+	background-color: var(--sunflower-gold);
+}
+.sidebar-label {
+	padding: 0.6rem 1rem 0;
+	font-size: 0.8rem;
+	text-transform: uppercase;
+}
+.hidden {
+	display: none;
+}
 .projects-list {
 	grid-area: content;
 	padding: 1rem;
