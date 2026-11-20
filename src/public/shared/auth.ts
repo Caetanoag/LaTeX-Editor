@@ -51,7 +51,7 @@ export class AuthService {
 		localStorage.setItem("session", JSON.stringify(result.session));
 		return result;
 	}
-	private getSession(): Session | undefined {
+	public getSession(): Session | undefined {
 		const raw = localStorage.getItem("session");
 		if (!raw) return undefined;
 		try {
@@ -85,6 +85,10 @@ export class AuthService {
 		const data = (await response.json()) as { user: User };
 		return data.user;
 	}
+	public clearSession(): void {
+		localStorage.removeItem("session");
+	}
+
 	public async logOut(): Promise<void> {
 		const session = this.getSession();
 		if (!session) return;
@@ -100,7 +104,7 @@ export class AuthService {
 				);
 			}
 		} finally {
-			localStorage.removeItem("session");
+			this.clearSession();
 		}
 	}
 	public login(input: LoginInput): Promise<AuthResult> {
