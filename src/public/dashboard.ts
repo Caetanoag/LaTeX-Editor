@@ -4,11 +4,15 @@ import { hasValidSession } from "./shared/page-guard";
 type Workspace = {
 	id: string;
 	name: string;
+	description: string | null;
+	role?: string;
 };
 
 type Project = {
 	id: string;
 	title: string;
+	description: string | null;
+	visibility: "private" | "workspace" | "public";
 	owner_id: string;
 	updated_at: string;
 };
@@ -25,8 +29,6 @@ let currentWorkspace: Workspace | undefined;
 const projectsBody =
 	document.querySelector<HTMLTableSectionElement>("#projects-body");
 const workspaceList = document.querySelector<HTMLDivElement>("#workspace-list");
-const dashboardHeader =
-	document.querySelector<HTMLElement>("#dashboard-header");
 const dashboardMessage =
 	document.querySelector<HTMLElement>("#dashboard-message");
 const createWorkspaceButton = document.querySelector<HTMLButtonElement>(
@@ -76,6 +78,38 @@ const cancelProjectButton = document.querySelector<HTMLButtonElement>(
 const submitProjectButton = document.querySelector<HTMLButtonElement>(
 	"#submit-project-button",
 );
+const dashboardTitle = document.querySelector<HTMLElement>("#dashboard-title");
+const selectionCard = document.querySelector<HTMLElement>("#selection-card");
+const selectionCount = document.querySelector<HTMLElement>("#selection-count");
+const editProjectButton = document.querySelector<HTMLButtonElement>(
+	"#edit-project-button",
+);
+const archiveProjectsButton = document.querySelector<HTMLButtonElement>(
+	"#archive-projects-button",
+);
+const projectDialogTitle = document.querySelector<HTMLElement>(
+	"#project-dialog-title",
+);
+const workspaceSelectionCard = document.querySelector<HTMLElement>(
+	"#workspace-selection-card",
+);
+const workspaceSelectionName = document.querySelector<HTMLElement>(
+	"#workspace-selection-name",
+);
+const editWorkspaceButton = document.querySelector<HTMLButtonElement>(
+	"#edit-workspace-button",
+);
+const deleteWorkspaceButton = document.querySelector<HTMLButtonElement>(
+	"#delete-workspace-button",
+);
+const workspaceDialogTitle = document.querySelector<HTMLElement>(
+	"#workspace-dialog-title",
+);
+
+const selectedProjectIds = new Set<string>();
+let editingProjectId: string | null = null;
+let selectedWorkspaceId: string | null = null;
+let editingWorkspaceId: string | null = null;
 
 const showMessage = (message: string): void => {
 	if (!dashboardMessage) return;
@@ -93,6 +127,41 @@ const setDialogError = (element: HTMLElement | null, message: string): void => {
 	if (!element) return;
 	element.textContent = message;
 	element.classList.toggle("hidden", message === "");
+};
+
+const updateSelectionCard = (): void => {
+	const count = selectedProjectIds.size;
+	const hasProjects = count > 0;
+	selectionCard?.classList.toggle("hidden", !hasProjects);
+	if (selectionCount) {
+		selectionCount.textContent =
+			count === 1 ? "1 project selected" : `${count} projects selected`;
+	}
+	if (editProjectButton) editProjectButton.disabled = count !== 1;
+	if (archiveProjectsButton) archiveProjectsButton.disabled = !hasProjects;
+
+	const showWorkspace =
+		!hasProjects &&
+		selectedWorkspaceId !== null &&
+		currentWorkspace?.id === selectedWorkspaceId;
+	workspaceSelectionCard?.classList.toggle("hidden", !showWorkspace);
+	if (workspaceSelectionName && showWorkspace) {
+		workspaceSelectionName.textContent = currentWorkspace?.name ?? "";
+	}
+	if (editWorkspaceButton) {
+		editWorkspaceButton.disabled =
+			!showWorkspace ||
+			!["owner", "admin"].includes(currentWorkspace?.role ?? "");
+	}
+	if (deleteWorkspaceButton) {
+		deleteWorkspaceButton.disabled =
+			!showWorkspace || currentWorkspace?.role !== "owner";
+	}
+};
+
+const clearSelection = (): void => {
+	selectedProjectIds.clear();
+	updateSelectionCard();
 };
 
 const apiFetch = async <T>(
@@ -118,6 +187,7 @@ const apiFetch = async <T>(
 		throw new Error("Unauthorized");
 	}
 	if (!response.ok) throw new Error(`Request failed with ${response.status}`);
+	if (response.status === 204) return undefined as T;
 	return (await response.json()) as T;
 };
 
@@ -149,6 +219,7 @@ const loadProjects = async (workspace: Workspace): Promise<void> => {
 	if (!projectsBody) return;
 
 	clearMessage();
+	clearSelection();
 	projectsBody.replaceChildren();
 
 	try {
@@ -184,6 +255,9 @@ const loadProjects = async (workspace: Workspace): Promise<void> => {
 			const checkbox = document.createElement("input");
 			checkbox.type = "checkbox";
 			checkbox.className = "table-checkbox";
+			checkbox.dataset.projectId = project.id;
+			checkbox.checked = selectedProjectIds.has(project.id);
+			checkbox.setAttribute("aria-label", `Select ${project.title}`);
 			checkboxCell.appendChild(checkbox);
 
 			row.appendChild(checkboxCell);
@@ -196,6 +270,19 @@ const loadProjects = async (workspace: Workspace): Promise<void> => {
 		showMessage("Unable to load projects.");
 	}
 };
+
+projectsBody?.addEventListener("change", (event) => {
+	const target = event.target;
+	if (!(target instanceof HTMLInputElement)) return;
+	if (!target.matches(".table-checkbox")) return;
+
+	const projectId = target.dataset.projectId;
+	if (!projectId) return;
+
+	if (target.checked) selectedProjectIds.add(projectId);
+	else selectedProjectIds.delete(projectId);
+	updateSelectionCard();
+});
 
 const renderWorkspaceButtons = (
 	workspaces: Workspace[],
@@ -210,9 +297,12 @@ const renderWorkspaceButtons = (
 		button.textContent = workspace.name;
 		button.setAttribute("aria-pressed", String(workspace.id === selectedId));
 		button.addEventListener("click", () => {
+			currentWorkspace = workspace;
+			selectedWorkspaceId = workspace.id;
 			localStorage.setItem(WORKSPACE_STORAGE_KEY, String(workspace.id));
+			clearSelection();
 			renderWorkspaceButtons(workspaces, workspace.id);
-			if (dashboardHeader) dashboardHeader.textContent = workspace.name;
+			if (dashboardTitle) dashboardTitle.textContent = workspace.name;
 			void loadProjects(workspace);
 		});
 		workspaceList.appendChild(button);
@@ -231,16 +321,18 @@ const loadWorkspaces = async (preferredId?: string): Promise<void> => {
 			workspaces[0];
 		if (!selected) {
 			currentWorkspace = undefined;
+			selectedWorkspaceId = null;
+			clearSelection();
 			renderWorkspaceButtons(workspaces, "");
 			projectsBody?.replaceChildren();
-			if (dashboardHeader) dashboardHeader.textContent = "No workspace";
+			if (dashboardTitle) dashboardTitle.textContent = "No workspace";
 			showMessage("No workspaces yet.");
 			return;
 		}
 
 		currentWorkspace = selected;
 		localStorage.setItem(WORKSPACE_STORAGE_KEY, selected.id);
-		if (dashboardHeader) dashboardHeader.textContent = selected.name;
+		if (dashboardTitle) dashboardTitle.textContent = selected.name;
 		renderWorkspaceButtons(workspaces, selected.id);
 		await loadProjects(selected);
 	} catch {
@@ -265,9 +357,17 @@ const createWorkspace = async (
 	return workspace;
 };
 
-createWorkspaceButton?.addEventListener("click", () => {
+const resetWorkspaceDialog = (): void => {
+	editingWorkspaceId = null;
+	if (workspaceDialogTitle)
+		workspaceDialogTitle.textContent = "Create Workspace";
+	if (submitWorkspaceButton) submitWorkspaceButton.textContent = "Create";
 	setDialogError(workspaceDialogError, "");
 	createWorkspaceForm?.reset();
+};
+
+createWorkspaceButton?.addEventListener("click", () => {
+	resetWorkspaceDialog();
 	workspaceDialog?.showModal();
 	workspaceNameInput?.focus();
 });
@@ -275,6 +375,57 @@ createWorkspaceButton?.addEventListener("click", () => {
 cancelWorkspaceButton?.addEventListener("click", () =>
 	workspaceDialog?.close(),
 );
+
+const openEditWorkspaceDialog = async (workspaceId: string): Promise<void> => {
+	resetWorkspaceDialog();
+	if (submitWorkspaceButton) submitWorkspaceButton.disabled = true;
+	try {
+		const { workspace } = await apiFetch<{ workspace: Workspace }>(
+			`/workspaces/${workspaceId}`,
+		);
+		editingWorkspaceId = workspaceId;
+		if (workspaceDialogTitle)
+			workspaceDialogTitle.textContent = "Edit Workspace";
+		if (submitWorkspaceButton) submitWorkspaceButton.textContent = "Save";
+		if (workspaceNameInput) workspaceNameInput.value = workspace.name;
+		if (workspaceDescriptionInput)
+			workspaceDescriptionInput.value = workspace.description ?? "";
+		workspaceDialog?.showModal();
+		workspaceNameInput?.focus();
+	} catch {
+		showMessage("Unable to load workspace.");
+	} finally {
+		if (submitWorkspaceButton) submitWorkspaceButton.disabled = false;
+	}
+};
+
+editWorkspaceButton?.addEventListener("click", () => {
+	if (!selectedWorkspaceId) return;
+	void openEditWorkspaceDialog(selectedWorkspaceId);
+});
+
+deleteWorkspaceButton?.addEventListener("click", () => {
+	const workspaceId = selectedWorkspaceId;
+	if (!workspaceId || currentWorkspace?.id !== workspaceId) return;
+	if (!window.confirm(`Delete workspace "${currentWorkspace.name}"?`)) return;
+
+	void (async () => {
+		try {
+			await apiFetch<void>(`/workspaces/${workspaceId}`, {
+				method: "DELETE",
+			});
+			if (localStorage.getItem(WORKSPACE_STORAGE_KEY) === workspaceId) {
+				localStorage.removeItem(WORKSPACE_STORAGE_KEY);
+			}
+			selectedWorkspaceId = null;
+			currentWorkspace = undefined;
+			clearSelection();
+			await loadWorkspaces();
+		} catch {
+			showMessage("Unable to delete workspace.");
+		}
+	})();
+});
 
 createWorkspaceForm?.addEventListener("submit", async (event) => {
 	event.preventDefault();
@@ -285,33 +436,43 @@ createWorkspaceForm?.addEventListener("submit", async (event) => {
 	}
 
 	const description = workspaceDescriptionInput?.value.trim() ?? "";
+	const payload = {
+		name,
+		description: description === "" ? null : description,
+	};
 	if (submitWorkspaceButton) submitWorkspaceButton.disabled = true;
 	try {
-		const workspace = await createWorkspace(name, description);
+		let workspace: Workspace;
+		if (editingWorkspaceId) {
+			const response = await apiFetch<{ workspace: Workspace }>(
+				`/workspaces/${editingWorkspaceId}`,
+				{ method: "PATCH", body: JSON.stringify(payload) },
+			);
+			workspace = response.workspace;
+		} else {
+			workspace = await createWorkspace(name, description);
+		}
 		workspaceDialog?.close();
+		selectedWorkspaceId = editingWorkspaceId ?? null;
 		await loadWorkspaces(workspace.id);
 	} catch {
-		setDialogError(workspaceDialogError, "Unable to create workspace.");
+		setDialogError(
+			workspaceDialogError,
+			editingWorkspaceId
+				? "Unable to update workspace."
+				: "Unable to create workspace.",
+		);
 	} finally {
 		if (submitWorkspaceButton) submitWorkspaceButton.disabled = false;
 	}
 });
 
-const createProject = async (
-	workspaceId: string,
-	title: string,
-	description: string,
-	visibility: string,
-): Promise<void> => {
-	await apiFetch("/projects", {
-		method: "POST",
-		body: JSON.stringify({
-			workspaceId,
-			title,
-			description: description === "" ? null : description,
-			visibility,
-		}),
-	});
+const resetProjectDialog = (): void => {
+	editingProjectId = null;
+	if (projectDialogTitle) projectDialogTitle.textContent = "Create Project";
+	if (submitProjectButton) submitProjectButton.textContent = "Create";
+	setDialogError(projectDialogError, "");
+	createProjectForm?.reset();
 };
 
 createProjectButton?.addEventListener("click", () => {
@@ -320,17 +481,69 @@ createProjectButton?.addEventListener("click", () => {
 		return;
 	}
 
-	setDialogError(projectDialogError, "");
-	createProjectForm?.reset();
+	resetProjectDialog();
 	projectDialog?.showModal();
 	projectTitleInput?.focus();
 });
 
 cancelProjectButton?.addEventListener("click", () => projectDialog?.close());
 
+const openEditProjectDialog = async (projectId: string): Promise<void> => {
+	resetProjectDialog();
+	if (submitProjectButton) submitProjectButton.disabled = true;
+	try {
+		const { project } = await apiFetch<{ project: Project }>(
+			`/projects/${projectId}`,
+		);
+		editingProjectId = projectId;
+		if (projectDialogTitle) projectDialogTitle.textContent = "Edit Project";
+		if (submitProjectButton) submitProjectButton.textContent = "Save";
+		if (projectTitleInput) projectTitleInput.value = project.title;
+		if (projectDescriptionInput)
+			projectDescriptionInput.value = project.description ?? "";
+		if (projectVisibilitySelect)
+			projectVisibilitySelect.value = project.visibility;
+		projectDialog?.showModal();
+		projectTitleInput?.focus();
+	} catch {
+		showMessage("Unable to load project.");
+	} finally {
+		if (submitProjectButton) submitProjectButton.disabled = false;
+	}
+};
+
+editProjectButton?.addEventListener("click", () => {
+	if (selectedProjectIds.size !== 1) return;
+	const [projectId] = selectedProjectIds;
+	if (projectId) void openEditProjectDialog(projectId);
+});
+
+archiveProjectsButton?.addEventListener("click", () => {
+	const projectIds = [...selectedProjectIds];
+	if (projectIds.length === 0) return;
+
+	const label =
+		projectIds.length === 1 ? "this project" : `${projectIds.length} projects`;
+	if (!window.confirm(`Archive ${label}?`)) return;
+
+	void (async () => {
+		try {
+			await Promise.all(
+				projectIds.map((projectId) =>
+					apiFetch<void>(`/projects/${projectId}`, { method: "DELETE" }),
+				),
+			);
+			clearSelection();
+			if (currentWorkspace) await loadProjects(currentWorkspace);
+		} catch {
+			showMessage("Unable to archive selected projects.");
+		}
+	})();
+});
+
 createProjectForm?.addEventListener("submit", async (event) => {
 	event.preventDefault();
-	if (!currentWorkspace) return;
+	if (!currentWorkspace && !editingProjectId) return;
 
 	const title = projectTitleInput?.value.trim() ?? "";
 	if (!title) {
@@ -339,14 +552,38 @@ createProjectForm?.addEventListener("submit", async (event) => {
 	}
 
 	const description = projectDescriptionInput?.value.trim() ?? "";
-	const visibility = projectVisibilitySelect?.value ?? "private";
+	const payload = {
+		title,
+		description: description === "" ? null : description,
+		visibility: projectVisibilitySelect?.value ?? "private",
+	};
+
 	if (submitProjectButton) submitProjectButton.disabled = true;
 	try {
-		await createProject(currentWorkspace.id, title, description, visibility);
+		if (editingProjectId) {
+			await apiFetch<void>(`/projects/${editingProjectId}`, {
+				method: "PATCH",
+				body: JSON.stringify(payload),
+			});
+		} else if (currentWorkspace) {
+			await apiFetch("/projects", {
+				method: "POST",
+				body: JSON.stringify({
+					workspaceId: currentWorkspace.id,
+					...payload,
+				}),
+			});
+		}
 		projectDialog?.close();
-		await loadProjects(currentWorkspace);
+		clearSelection();
+		if (currentWorkspace) await loadProjects(currentWorkspace);
 	} catch {
-		setDialogError(projectDialogError, "Unable to create project.");
+		setDialogError(
+			projectDialogError,
+			editingProjectId
+				? "Unable to update project."
+				: "Unable to create project.",
+		);
 	} finally {
 		if (submitProjectButton) submitProjectButton.disabled = false;
 	}
