@@ -72,6 +72,7 @@ if (registerForm && errorBox) {
 			console.log(
 				`User ${response.user.username} created at ${response.user.created_at}`,
 			);
+			window.location.assign("dashboard.html");
 		} catch (err) {
 			if (err instanceof AuthRequestError) {
 				showError(apiErrorMessages[err.code] ?? `Error: ${err.message}`);
