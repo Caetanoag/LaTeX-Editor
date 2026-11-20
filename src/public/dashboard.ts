@@ -229,7 +229,7 @@ const loadProjects = async (workspace: Workspace): Promise<void> => {
 		if (projects.length === 0) {
 			const row = document.createElement("tr");
 			const cell = textCell("No projects in this workspace yet.");
-			cell.colSpan = 4;
+			cell.colSpan = 5;
 			row.appendChild(cell);
 			projectsBody.appendChild(row);
 			return;
@@ -264,6 +264,19 @@ const loadProjects = async (workspace: Workspace): Promise<void> => {
 			row.appendChild(textCell(project.title));
 			row.appendChild(textCell(owners.get(project.owner_id) ?? "Unknown"));
 			row.appendChild(textCell(relativeTime(project.updated_at)));
+
+			const editorCell = document.createElement("td");
+			const editorLink = document.createElement("a");
+			editorLink.className = "project-open-link";
+			editorLink.href = `./editor.html?projectId=${encodeURIComponent(project.id)}`;
+			editorLink.textContent = "Open";
+			editorLink.setAttribute(
+				"aria-label",
+				`Open ${project.title} in the editor`,
+			);
+			editorCell.appendChild(editorLink);
+			row.appendChild(editorCell);
+
 			projectsBody.appendChild(row);
 		}
 	} catch {
