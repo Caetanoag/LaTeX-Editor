@@ -178,6 +178,14 @@
 	padding: 1rem;
 	box-sizing: border-box;
 }
+.project-open-link {
+	color: var(--indigo-velvet);
+	font-weight: 600;
+	text-decoration: none;
+}
+.project-open-link:hover {
+	text-decoration: underline;
+}
 .dashboard-header {
 	grid-area: header;
 	background-color: #f4f4f4;
@@ -258,3 +266,95 @@
 .table-checkbox:focus-visible {
 	box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
+
+body[data-page="account"] {
+	margin: 0;
+	padding: 2rem 1rem;
+}
+.account-header {
+	max-width: 64rem;
+	margin: 0 auto 1.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+}
+.account-header h1 {
+	margin: 0;
+	font-size: 1.75rem;
+}
+.account-back-link {
+	color: var(--indigo-velvet);
+	text-decoration: none;
+	font-weight: 600;
+}
+.account-back-link:hover {
+	text-decoration: underline;
+}
+.account-page {
+	max-width: 64rem;
+	margin: 0 auto;
+	display: grid;
+	gap: 1.5rem;
+}
+.account-card {
+	background-color: #f4f4f4;
+	padding: 1.25rem;
+	border: 1px solid var(--carbon-black);
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.account-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+.account-card h2 {
+	margin: 0;
+}
+.account-details {
+	margin: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	gap: 1rem;
+}
+.account-detail dt {
+	font-size: 0.8rem;
+	font-weight: 600;
+	opacity: 0.7;
+}
+.account-detail dd {
+	margin: 0.25rem 0 0;
+	word-break: break-word;
+}
+.account-sessions-table {
+	width: 100%;
+}
+.session-badge {
+	margin-left: 0.5rem;
+	padding: 0.1rem 0.4rem;
+	border: 1px solid var(--indigo-velvet);
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+.account-button {
+	font: inherit;
+	padding: 0.4rem 0.75rem;
+	border: 1px solid var(--carbon-black);
+	border-radius: 6px;
+	background-color: var(--sunflower-gold);
+	cursor: pointer;
+}
+.account-button:hover {
+	background-color: var(--sunflower-gold-highlight);
+}
+.account-button-danger {
+	background-color: var(--grapefruit-pink);
+}
+.account-danger-zone p {
+	max-width: 40rem;
+}
+
