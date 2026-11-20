@@ -79,6 +79,12 @@ const submitProjectButton = document.querySelector<HTMLButtonElement>(
 	"#submit-project-button",
 );
 const dashboardTitle = document.querySelector<HTMLElement>("#dashboard-title");
+const archivedButton =
+	document.querySelector<HTMLButtonElement>("#archived-button");
+const selectionHeader =
+	document.querySelector<HTMLTableCellElement>("#selection-header");
+const actionsHeader =
+	document.querySelector<HTMLTableCellElement>("#actions-header");
 const selectionCard = document.querySelector<HTMLElement>("#selection-card");
 const selectionCount = document.querySelector<HTMLElement>("#selection-count");
 const editProjectButton = document.querySelector<HTMLButtonElement>(
@@ -110,6 +116,7 @@ const selectedProjectIds = new Set<string>();
 let editingProjectId: string | null = null;
 let selectedWorkspaceId: string | null = null;
 let editingWorkspaceId: string | null = null;
+let showArchived = false;
 
 const showMessage = (message: string): void => {
 	if (!dashboardMessage) return;
@@ -132,7 +139,7 @@ const setDialogError = (element: HTMLElement | null, message: string): void => {
 const updateSelectionCard = (): void => {
 	const count = selectedProjectIds.size;
 	const hasProjects = count > 0;
-	selectionCard?.classList.toggle("hidden", !hasProjects);
+	selectionCard?.classList.toggle("hidden", !hasProjects || showArchived);
 	if (selectionCount) {
 		selectionCount.textContent =
 			count === 1 ? "1 project selected" : `${count} projects selected`;
@@ -141,6 +148,7 @@ const updateSelectionCard = (): void => {
 	if (archiveProjectsButton) archiveProjectsButton.disabled = !hasProjects;
 
 	const showWorkspace =
+		!showArchived &&
 		!hasProjects &&
 		selectedWorkspaceId !== null &&
 		currentWorkspace?.id === selectedWorkspaceId;
@@ -161,6 +169,22 @@ const updateSelectionCard = (): void => {
 
 const clearSelection = (): void => {
 	selectedProjectIds.clear();
+	updateSelectionCard();
+};
+
+const renderView = (): void => {
+	if (selectionHeader) selectionHeader.hidden = showArchived;
+	if (actionsHeader)
+		actionsHeader.textContent = showArchived ? "Actions" : "Editor";
+	if (archivedButton) {
+		archivedButton.textContent = showArchived ? "Back to projects" : "Archived";
+		archivedButton.setAttribute("aria-pressed", String(showArchived));
+	}
+	createProjectButton?.classList.toggle("hidden", showArchived);
+	if (dashboardTitle) {
+		const name = currentWorkspace?.name ?? "No workspace";
+		dashboardTitle.textContent = showArchived ? `Archived · ${name}` : name;
+	}
 	updateSelectionCard();
 };
 
@@ -223,13 +247,18 @@ const loadProjects = async (workspace: Workspace): Promise<void> => {
 	projectsBody.replaceChildren();
 
 	try {
-		const { projects } = await apiFetch<{ projects: Project[] }>(
-			`/projects?workspaceId=${workspace.id}`,
-		);
+		const query = showArchived
+			? `/projects?workspaceId=${workspace.id}&archived=true`
+			: `/projects?workspaceId=${workspace.id}`;
+		const { projects } = await apiFetch<{ projects: Project[] }>(query);
 		if (projects.length === 0) {
 			const row = document.createElement("tr");
-			const cell = textCell("No projects in this workspace yet.");
-			cell.colSpan = 5;
+			const cell = textCell(
+				showArchived
+					? "No archived projects in this workspace."
+					: "No projects in this workspace yet.",
+			);
+			cell.colSpan = showArchived ? 4 : 5;
 			row.appendChild(cell);
 			projectsBody.appendChild(row);
 			return;
@@ -251,36 +280,65 @@ const loadProjects = async (workspace: Workspace): Promise<void> => {
 		for (const project of projects) {
 			const row = document.createElement("tr");
 
-			const checkboxCell = document.createElement("td");
-			const checkbox = document.createElement("input");
-			checkbox.type = "checkbox";
-			checkbox.className = "table-checkbox";
-			checkbox.dataset.projectId = project.id;
-			checkbox.checked = selectedProjectIds.has(project.id);
-			checkbox.setAttribute("aria-label", `Select ${project.title}`);
-			checkboxCell.appendChild(checkbox);
+			if (!showArchived) {
+				const checkboxCell = document.createElement("td");
+				const checkbox = document.createElement("input");
+				checkbox.type = "checkbox";
+				checkbox.className = "table-checkbox";
+				checkbox.dataset.projectId = project.id;
+				checkbox.checked = selectedProjectIds.has(project.id);
+				checkbox.setAttribute("aria-label", `Select ${project.title}`);
+				checkboxCell.appendChild(checkbox);
+				row.appendChild(checkboxCell);
+			}
 
-			row.appendChild(checkboxCell);
 			row.appendChild(textCell(project.title));
 			row.appendChild(textCell(owners.get(project.owner_id) ?? "Unknown"));
 			row.appendChild(textCell(relativeTime(project.updated_at)));
 
-			const editorCell = document.createElement("td");
-			const editorLink = document.createElement("a");
-			editorLink.className = "project-open-link";
-			editorLink.href = `./editor.html?projectId=${encodeURIComponent(project.id)}`;
-			editorLink.textContent = "Open";
-			editorLink.setAttribute(
-				"aria-label",
-				`Open ${project.title} in the editor`,
-			);
-			editorCell.appendChild(editorLink);
-			row.appendChild(editorCell);
+			const actionsCell = document.createElement("td");
+			if (showArchived) {
+				const restoreButton = document.createElement("button");
+				restoreButton.type = "button";
+				restoreButton.textContent = "Restore";
+				restoreButton.setAttribute("aria-label", `Restore ${project.title}`);
+				restoreButton.addEventListener("click", () => {
+					void restoreProject(project);
+				});
+				actionsCell.appendChild(restoreButton);
+			} else {
+				const editorLink = document.createElement("a");
+				editorLink.className = "project-open-link";
+				editorLink.href = `./editor.html?projectId=${encodeURIComponent(project.id)}`;
+				editorLink.textContent = "Open";
+				editorLink.setAttribute(
+					"aria-label",
+					`Open ${project.title} in the editor`,
+				);
+				actionsCell.appendChild(editorLink);
+			}
+			row.appendChild(actionsCell);
 
 			projectsBody.appendChild(row);
 		}
 	} catch {
-		showMessage("Unable to load projects.");
+		showMessage(
+			showArchived
+				? "Unable to load archived projects."
+				: "Unable to load projects.",
+		);
+	}
+};
+
+const restoreProject = async (project: Project): Promise<void> => {
+	if (!window.confirm(`Restore "${project.title}"?`)) return;
+
+	try {
+		await apiFetch(`/projects/${project.id}/restore`, { method: "POST" });
+		if (currentWorkspace) await loadProjects(currentWorkspace);
+		showMessage(`Restored "${project.title}".`);
+	} catch {
+		showMessage("Unable to restore project.");
 	}
 };
 
@@ -315,7 +373,7 @@ const renderWorkspaceButtons = (
 			localStorage.setItem(WORKSPACE_STORAGE_KEY, String(workspace.id));
 			clearSelection();
 			renderWorkspaceButtons(workspaces, workspace.id);
-			if (dashboardTitle) dashboardTitle.textContent = workspace.name;
+			renderView();
 			void loadProjects(workspace);
 		});
 		workspaceList.appendChild(button);
@@ -338,15 +396,15 @@ const loadWorkspaces = async (preferredId?: string): Promise<void> => {
 			clearSelection();
 			renderWorkspaceButtons(workspaces, "");
 			projectsBody?.replaceChildren();
-			if (dashboardTitle) dashboardTitle.textContent = "No workspace";
+			renderView();
 			showMessage("No workspaces yet.");
 			return;
 		}
 
 		currentWorkspace = selected;
 		localStorage.setItem(WORKSPACE_STORAGE_KEY, selected.id);
-		if (dashboardTitle) dashboardTitle.textContent = selected.name;
 		renderWorkspaceButtons(workspaces, selected.id);
+		renderView();
 		await loadProjects(selected);
 	} catch {
 		showMessage("Unable to load workspaces.");
@@ -531,6 +589,13 @@ editProjectButton?.addEventListener("click", () => {
 	if (projectId) void openEditProjectDialog(projectId);
 });
 
+archivedButton?.addEventListener("click", () => {
+	showArchived = !showArchived;
+	renderView();
+	if (currentWorkspace) void loadProjects(currentWorkspace);
+	else projectsBody?.replaceChildren();
+});
+
 archiveProjectsButton?.addEventListener("click", () => {
 	const projectIds = [...selectedProjectIds];
 	if (projectIds.length === 0) return;
@@ -601,6 +666,8 @@ createProjectForm?.addEventListener("submit", async (event) => {
 		if (submitProjectButton) submitProjectButton.disabled = false;
 	}
 });
+
+renderView();
 
 if (hasValidSession() && projectsBody) {
 	void loadWorkspaces();
