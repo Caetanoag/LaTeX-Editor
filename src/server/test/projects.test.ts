@@ -24,6 +24,33 @@ describe("Projects", () => {
 		expect(data.project.title).toBe(title);
 	});
 
+	it("creates a project with a default main LaTeX file", async () => {
+		const { token } = await registerUser();
+		const workspaceId = await createWorkspace(token);
+		const { data } = await api("/projects", {
+			method: "POST",
+			headers: { "Content-Type": "application/json", ...authHeaders(token) },
+			body: JSON.stringify({ workspaceId, title: `proj-${uid()}` }),
+		});
+		const projectId = data.project.id;
+
+		const { res, data: filesData } = await api(`/projects/${projectId}/files`, {
+			headers: authHeaders(token),
+		});
+		expect(res.status).toBe(200);
+		expect(filesData.files).toHaveLength(1);
+		expect(filesData.files[0].file_path).toBe("/main.tex");
+		expect(filesData.files[0].is_main).toBe(true);
+
+		const { res: fileRes, data: fileData } = await api(
+			`/files/${filesData.files[0].id}`,
+			{ headers: authHeaders(token) },
+		);
+		expect(fileRes.status).toBe(200);
+		expect(fileData.file.file_content).toContain("\\documentclass{article}");
+		expect(fileData.file.file_content).toContain("Hello, world!");
+	});
+
 	it("lists projects with/without workspace filter", async () => {
 		const { token } = await registerUser();
 		const workspaceId = await createWorkspace(token);
