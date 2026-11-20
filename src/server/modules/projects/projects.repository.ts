@@ -120,6 +120,7 @@ export const findProjectById = async (
 export const listProjectsForUser = async (
 	userId: number,
 	workspaceId?: number,
+	archived = false,
 ): Promise<Project[]> => {
 	const params: number[] = [userId];
 
@@ -129,11 +130,15 @@ export const listProjectsForUser = async (
 		workspaceFilter = `and p.workspace_id = $${params.length}`;
 	}
 
+	const archivedFilter = archived
+		? "p.archived_at is not null"
+		: "p.archived_at is null";
+
 	const result = await pool.query<Project>(
 		`
     select ${PROJECT_COLUMNS}
     from projects p
-    where p.archived_at is null
+    where ${archivedFilter}
       ${workspaceFilter}
       and (
         p.owner_id = $1
@@ -207,4 +212,34 @@ export const deleteProject = async (id: number): Promise<void> => {
         `,
 		[id],
 	);
+};
+
+export const findArchivedProjectById = async (
+	id: number,
+): Promise<Project | undefined> => {
+	const result = await pool.query<Project>(
+		`
+            select ${PROJECT_COLUMNS} from projects
+            where id = $1
+            and archived_at is not null
+        `,
+		[id],
+	);
+	return result.rows[0];
+};
+
+export const restoreProject = async (
+	id: number,
+): Promise<Project | undefined> => {
+	const result = await pool.query<Project>(
+		`
+            update projects
+            set archived_at = null, updated_at = now()
+            where id = $1
+            and archived_at is not null
+            returning ${PROJECT_COLUMNS}
+        `,
+		[id],
+	);
+	return result.rows[0];
 };
