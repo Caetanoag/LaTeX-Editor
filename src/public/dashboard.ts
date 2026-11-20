@@ -28,6 +28,28 @@ const dashboardHeader =
 	document.querySelector<HTMLElement>("#dashboard-header");
 const dashboardMessage =
 	document.querySelector<HTMLElement>("#dashboard-message");
+const createWorkspaceButton = document.querySelector<HTMLButtonElement>(
+	"#create-workspace-button",
+);
+const workspaceDialog =
+	document.querySelector<HTMLDialogElement>("#workspace-dialog");
+const createWorkspaceForm = document.querySelector<HTMLFormElement>(
+	"#create-workspace-form",
+);
+const workspaceNameInput =
+	document.querySelector<HTMLInputElement>("#workspace-name");
+const workspaceDescriptionInput = document.querySelector<HTMLTextAreaElement>(
+	"#workspace-description",
+);
+const workspaceDialogError = document.querySelector<HTMLElement>(
+	"#workspace-dialog-error",
+);
+const cancelWorkspaceButton = document.querySelector<HTMLButtonElement>(
+	"#cancel-workspace-button",
+);
+const submitWorkspaceButton = document.querySelector<HTMLButtonElement>(
+	"#submit-workspace-button",
+);
 
 const showMessage = (message: string): void => {
 	if (!dashboardMessage) return;
@@ -41,12 +63,32 @@ const clearMessage = (): void => {
 	dashboardMessage.classList.add("hidden");
 };
 
-const apiFetch = async <T>(path: string): Promise<T> => {
+const showDialogError = (message: string): void => {
+	if (!workspaceDialogError) return;
+	workspaceDialogError.textContent = message;
+	workspaceDialogError.classList.remove("hidden");
+};
+
+const clearDialogError = (): void => {
+	if (!workspaceDialogError) return;
+	workspaceDialogError.textContent = "";
+	workspaceDialogError.classList.add("hidden");
+};
+
+const apiFetch = async <T>(
+	path: string,
+	init: RequestInit = {},
+): Promise<T> => {
 	const token = authService.getSession()?.token;
 	if (!token) throw new Error("No session");
 
+	const headers = new Headers(init.headers);
+	headers.set("Authorization", `Bearer ${token}`);
+	if (init.body) headers.set("Content-Type", "application/json");
+
 	const response = await fetch(`${window.location.origin}${path}`, {
-		headers: { Authorization: `Bearer ${token}` },
+		...init,
+		headers,
 	});
 	if (response.status === 401) {
 		authService.clearSession();
@@ -157,21 +199,25 @@ const renderWorkspaceButtons = (
 	}
 };
 
-const initializeDashboard = async (): Promise<void> => {
+const loadWorkspaces = async (preferredId?: string): Promise<void> => {
+	clearMessage();
 	try {
 		const { workspaces } = await apiFetch<{ workspaces: Workspace[] }>(
 			"/workspaces",
 		);
-		const storedId = localStorage.getItem(WORKSPACE_STORAGE_KEY);
+		const storedId = preferredId ?? localStorage.getItem(WORKSPACE_STORAGE_KEY);
 		const selected =
 			workspaces.find((workspace) => workspace.id === storedId) ??
 			workspaces[0];
 		if (!selected) {
+			renderWorkspaceButtons(workspaces, "");
+			projectsBody?.replaceChildren();
+			if (dashboardHeader) dashboardHeader.textContent = "No workspace";
 			showMessage("No workspaces yet.");
 			return;
 		}
 
-		localStorage.setItem(WORKSPACE_STORAGE_KEY, String(selected.id));
+		localStorage.setItem(WORKSPACE_STORAGE_KEY, selected.id);
 		if (dashboardHeader) dashboardHeader.textContent = selected.name;
 		renderWorkspaceButtons(workspaces, selected.id);
 		await loadProjects(selected);
@@ -180,6 +226,55 @@ const initializeDashboard = async (): Promise<void> => {
 	}
 };
 
+const createWorkspace = async (
+	name: string,
+	description: string,
+): Promise<Workspace> => {
+	const { workspace } = await apiFetch<{ workspace: Workspace }>(
+		"/workspaces",
+		{
+			method: "POST",
+			body: JSON.stringify({
+				name,
+				description: description === "" ? null : description,
+			}),
+		},
+	);
+	return workspace;
+};
+
+createWorkspaceButton?.addEventListener("click", () => {
+	clearDialogError();
+	createWorkspaceForm?.reset();
+	workspaceDialog?.showModal();
+	workspaceNameInput?.focus();
+});
+
+cancelWorkspaceButton?.addEventListener("click", () =>
+	workspaceDialog?.close(),
+);
+
+createWorkspaceForm?.addEventListener("submit", async (event) => {
+	event.preventDefault();
+	const name = workspaceNameInput?.value.trim() ?? "";
+	if (!name) {
+		showDialogError("Name is required.");
+		return;
+	}
+
+	const description = workspaceDescriptionInput?.value.trim() ?? "";
+	if (submitWorkspaceButton) submitWorkspaceButton.disabled = true;
+	try {
+		const workspace = await createWorkspace(name, description);
+		workspaceDialog?.close();
+		await loadWorkspaces(workspace.id);
+	} catch {
+		showDialogError("Unable to create workspace.");
+	} finally {
+		if (submitWorkspaceButton) submitWorkspaceButton.disabled = false;
+	}
+});
+
 if (hasValidSession() && projectsBody) {
-	void initializeDashboard();
+	void loadWorkspaces();
 }
