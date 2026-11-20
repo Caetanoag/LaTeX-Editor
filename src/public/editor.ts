@@ -338,6 +338,7 @@ const loadFiles = async (): Promise<void> => {
 	} catch (error) {
 		showError(error, "Unable to load files.");
 	}
+	refreshActions();
 };
 
 const saveFile = async (announce = true): Promise<void> => {
