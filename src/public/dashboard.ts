@@ -20,6 +20,7 @@ type Owner = {
 
 const WORKSPACE_STORAGE_KEY = "currentWorkspaceId";
 const authService = new AuthService(`${window.location.origin}/auth`);
+let currentWorkspace: Workspace | undefined;
 
 const projectsBody =
 	document.querySelector<HTMLTableSectionElement>("#projects-body");
@@ -50,6 +51,31 @@ const cancelWorkspaceButton = document.querySelector<HTMLButtonElement>(
 const submitWorkspaceButton = document.querySelector<HTMLButtonElement>(
 	"#submit-workspace-button",
 );
+const createProjectButton = document.querySelector<HTMLButtonElement>(
+	"#create-project-button",
+);
+const projectDialog =
+	document.querySelector<HTMLDialogElement>("#project-dialog");
+const createProjectForm = document.querySelector<HTMLFormElement>(
+	"#create-project-form",
+);
+const projectTitleInput =
+	document.querySelector<HTMLInputElement>("#project-title");
+const projectDescriptionInput = document.querySelector<HTMLTextAreaElement>(
+	"#project-description",
+);
+const projectVisibilitySelect = document.querySelector<HTMLSelectElement>(
+	"#project-visibility",
+);
+const projectDialogError = document.querySelector<HTMLElement>(
+	"#project-dialog-error",
+);
+const cancelProjectButton = document.querySelector<HTMLButtonElement>(
+	"#cancel-project-button",
+);
+const submitProjectButton = document.querySelector<HTMLButtonElement>(
+	"#submit-project-button",
+);
 
 const showMessage = (message: string): void => {
 	if (!dashboardMessage) return;
@@ -63,16 +89,10 @@ const clearMessage = (): void => {
 	dashboardMessage.classList.add("hidden");
 };
 
-const showDialogError = (message: string): void => {
-	if (!workspaceDialogError) return;
-	workspaceDialogError.textContent = message;
-	workspaceDialogError.classList.remove("hidden");
-};
-
-const clearDialogError = (): void => {
-	if (!workspaceDialogError) return;
-	workspaceDialogError.textContent = "";
-	workspaceDialogError.classList.add("hidden");
+const setDialogError = (element: HTMLElement | null, message: string): void => {
+	if (!element) return;
+	element.textContent = message;
+	element.classList.toggle("hidden", message === "");
 };
 
 const apiFetch = async <T>(
@@ -210,6 +230,7 @@ const loadWorkspaces = async (preferredId?: string): Promise<void> => {
 			workspaces.find((workspace) => workspace.id === storedId) ??
 			workspaces[0];
 		if (!selected) {
+			currentWorkspace = undefined;
 			renderWorkspaceButtons(workspaces, "");
 			projectsBody?.replaceChildren();
 			if (dashboardHeader) dashboardHeader.textContent = "No workspace";
@@ -217,6 +238,7 @@ const loadWorkspaces = async (preferredId?: string): Promise<void> => {
 			return;
 		}
 
+		currentWorkspace = selected;
 		localStorage.setItem(WORKSPACE_STORAGE_KEY, selected.id);
 		if (dashboardHeader) dashboardHeader.textContent = selected.name;
 		renderWorkspaceButtons(workspaces, selected.id);
@@ -244,7 +266,7 @@ const createWorkspace = async (
 };
 
 createWorkspaceButton?.addEventListener("click", () => {
-	clearDialogError();
+	setDialogError(workspaceDialogError, "");
 	createWorkspaceForm?.reset();
 	workspaceDialog?.showModal();
 	workspaceNameInput?.focus();
@@ -258,7 +280,7 @@ createWorkspaceForm?.addEventListener("submit", async (event) => {
 	event.preventDefault();
 	const name = workspaceNameInput?.value.trim() ?? "";
 	if (!name) {
-		showDialogError("Name is required.");
+		setDialogError(workspaceDialogError, "Name is required.");
 		return;
 	}
 
@@ -269,9 +291,64 @@ createWorkspaceForm?.addEventListener("submit", async (event) => {
 		workspaceDialog?.close();
 		await loadWorkspaces(workspace.id);
 	} catch {
-		showDialogError("Unable to create workspace.");
+		setDialogError(workspaceDialogError, "Unable to create workspace.");
 	} finally {
 		if (submitWorkspaceButton) submitWorkspaceButton.disabled = false;
+	}
+});
+
+const createProject = async (
+	workspaceId: string,
+	title: string,
+	description: string,
+	visibility: string,
+): Promise<void> => {
+	await apiFetch("/projects", {
+		method: "POST",
+		body: JSON.stringify({
+			workspaceId,
+			title,
+			description: description === "" ? null : description,
+			visibility,
+		}),
+	});
+};
+
+createProjectButton?.addEventListener("click", () => {
+	if (!currentWorkspace) {
+		showMessage("Create a workspace first.");
+		return;
+	}
+
+	setDialogError(projectDialogError, "");
+	createProjectForm?.reset();
+	projectDialog?.showModal();
+	projectTitleInput?.focus();
+});
+
+cancelProjectButton?.addEventListener("click", () => projectDialog?.close());
+
+createProjectForm?.addEventListener("submit", async (event) => {
+	event.preventDefault();
+	if (!currentWorkspace) return;
+
+	const title = projectTitleInput?.value.trim() ?? "";
+	if (!title) {
+		setDialogError(projectDialogError, "Title is required.");
+		return;
+	}
+
+	const description = projectDescriptionInput?.value.trim() ?? "";
+	const visibility = projectVisibilitySelect?.value ?? "private";
+	if (submitProjectButton) submitProjectButton.disabled = true;
+	try {
+		await createProject(currentWorkspace.id, title, description, visibility);
+		projectDialog?.close();
+		await loadProjects(currentWorkspace);
+	} catch {
+		setDialogError(projectDialogError, "Unable to create project.");
+	} finally {
+		if (submitProjectButton) submitProjectButton.disabled = false;
 	}
 });
 
