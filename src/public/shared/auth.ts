@@ -2,6 +2,14 @@ export type Session = {
 	token: string;
 	expiresAt: string; // ISO
 };
+export type SessionInfo = {
+	id: string;
+	maskedToken: string;
+	created_at: string;
+	expires_at: string;
+	last_used_at: string | null;
+	isCurrent: boolean;
+};
 export type User = {
 	id: number;
 	username: string;
@@ -50,6 +58,35 @@ export class AuthService {
 		const result = data as AuthResult;
 		localStorage.setItem("session", JSON.stringify(result.session));
 		return result;
+	}
+	private async authFetch(
+		path: string,
+		init: RequestInit = {},
+	): Promise<Response> {
+		const session = this.getSession();
+		if (!session) {
+			throw new AuthRequestError("No session", 401, "invalid_session");
+		}
+
+		const headers = new Headers(init.headers);
+		headers.set("Authorization", `Bearer ${session.token}`);
+		if (init.body) headers.set("Content-Type", "application/json");
+
+		const response = await fetch(`${this.baseurl}${path}`, {
+			...init,
+			headers,
+		});
+		if (!response.ok) {
+			const data = (await response.json().catch(() => undefined)) as
+				| { error?: string; message?: string }
+				| undefined;
+			throw new AuthRequestError(
+				data?.message ?? `Request failed with status ${response.status}`,
+				response.status,
+				data?.error ?? "unknown_error",
+			);
+		}
+		return response;
 	}
 	public getSession(): Session | undefined {
 		const raw = localStorage.getItem("session");
@@ -113,5 +150,22 @@ export class AuthService {
 
 	public register(input: RegisterInput): Promise<AuthResult> {
 		return this.postAuth("/register", input);
+	}
+	public async getSessions(): Promise<SessionInfo[]> {
+		const response = await this.authFetch("/sessions");
+		const data = (await response.json()) as { sessions: SessionInfo[] };
+		return data.sessions;
+	}
+	public async revokeSession(id: string): Promise<void> {
+		await this.authFetch(`/sessions/${id}`, { method: "DELETE" });
+	}
+	public async logoutAll(): Promise<void> {
+		await this.authFetch("/logout-all", { method: "POST" });
+	}
+	public async deleteAccount(password: string): Promise<void> {
+		await this.authFetch("/account", {
+			method: "DELETE",
+			body: JSON.stringify({ password }),
+		});
 	}
 }
