@@ -1,21 +1,33 @@
 # LaTeX Editor
 
-Editor de LaTeX self-hosted e open-source, construído com TypeScript.
+Editor de LaTeX self-hosted e open-source. A aplicação roda em um único servidor, expõe a interface e a API HTTP e guarda tudo no PostgreSQL. Basta acessar o endereço do servidor no navegador — não é preciso instalar nada nas máquinas dos usuários. A compilação dos documentos é feita no servidor com `latexmk`, e o PDF resultante aparece direto no editor.
 
-## Funcionalidades Principais
+Licença: AGPL-3.0-only (declarada em `package.json`).
 
-- **Acesso via navegador:** Apenas uma máquina na rede local precisa rodar o sistema, o resto pode acessar remotamente utilizar em qualquer navegador.
-- **Arquitetura Multi usuário:** Suporte para multiplos usuários, contas e equipes, essencial para colaboração.
-- **Edição Colaborativa de Documentos:** Compartilhe documentos com equipes ou usuários, controlando de forma precisa quais permissões cada pessoa tem (editar, comentar, etc).
-- **Tudo Fica Armazenado no Servidor:** Com o banco de dados PostgreSQL integrado, nada é perdido quando o serviço precisa ser reiniciado. Dados persistentes e de fácil migração entre máquinas.
+## Visão geral
 
-## Tech Stack
+### O que já funciona
 
-- **Frontend:** HTML5, CSS3, JavaScript
-- **Backend:** TypeScript, Express.js
-- **Runtime & Build:** Bun
-- **Sistema de Container:** Docker
-- **Banco de dados:** PostgreSQL
+- **Contas e sessões:** cadastro, login, logout, consulta ao usuário atual (`/auth/me`), lista e revogação de sessões, logout de todos os dispositivos e exclusão da conta protegida por senha. O token é enviado no cabeçalho `Authorization: Bearer <token>` e armazenado no `localStorage` do navegador.
+- **Workspaces e projetos:** criação, edição e exclusão lógica (soft delete) de workspaces e projetos. Projetos têm título, descrição e visibilidade (`private`, `workspace` ou `public`). Projetos arquivados podem ser restaurados.
+- **Editor de arquivos:** árvore de arquivos por caminho (`/main.tex`, `capitulos/intro.tex`, etc.), criação e exclusão de arquivos, definição do arquivo principal, edição com destaque de sintaxe LaTeX, autocomplete de comandos e trechos (snippets) com tab stops.
+- **Compilação para PDF:** todos os arquivos do projeto são copiados para um diretório temporário e compilados com `latexmk`. A resposta é o PDF ou o log de erro; compilações que excedem o timeout retornam HTTP 504.
+- **Controle de acesso na API:** o dono tem acesso total; papéis de membro e a visibilidade do projeto definem quem pode ler ou editar. A triagem de acesso acontece no backend.
+
+### O que ainda não está implementado
+
+Edição colaborativa em tempo real, convites, compartilhamento e comentários **não** existem hoje. O schema do banco já prevê tabelas para membros, convites, comentários e versões de arquivos, mas não há rotas nem interface para esses recursos. Da mesma forma, o gerenciamento de membros ainda não tem UI: a visibilidade `workspace` e `public` funciona, mas não há uma tela para adicionar pessoas a um workspace ou projeto.
+
+## Stack
+
+| Camada        | Tecnologia                                                                 |
+| ------------- | -------------------------------------------------------------------------- |
+| Backend       | Bun, TypeScript, Express 5, Zod (validação) e `pg`                          |
+| Frontend      | HTML, CSS e TypeScript compilado para JavaScript, sem framework            |
+| Banco         | PostgreSQL (schema em `db/schema.sql`)                                      |
+| Compilação    | `latexmk` + TeX Live no servidor                                            |
+| Build/dev     | Bun (`dev/build.ts` gera `public/js/`; `dev/serve.ts` serve a UI isolada)   |
+| Container     | Docker + Docker Compose                                                     |
 
 ## Configuração do Ambiente
 
