@@ -1,12 +1,21 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
-import { AppError } from "../lib/errors";
+import { AppError, ValidationError } from "../lib/errors";
 export const errorHandler = (
 	err: unknown,
 	_req: Request,
 	res: Response,
 	_next: NextFunction,
 ): void => {
+	if (err instanceof ValidationError) {
+		res.status(err.status).json({
+			error: err.code,
+			message: err.message,
+			details: err.details,
+		});
+		return;
+	}
+
 	if (err instanceof AppError) {
 		res.status(err.status).json({ error: err.code, message: err.message });
 		return;
