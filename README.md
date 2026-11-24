@@ -29,46 +29,68 @@ Edição colaborativa em tempo real, convites, compartilhamento e comentários *
 | Build/dev     | Bun (`dev/build.ts` gera `public/js/`; `dev/serve.ts` serve a UI isolada)   |
 | Container     | Docker + Docker Compose                                                     |
 
-## Configuração do Ambiente
+## Estrutura do repositório
 
-As credenciais do banco e as portas são lidas de variáveis de ambiente. Copie o arquivo de exemplo e ajuste os valores conforme necessário:
+```text
+src/server/                 API (Express)
+  app.ts                    middlewares e montagem das rotas
+  server.ts                 listener, /health e limpeza de sessões
+  modules/<feature>/        routes, service, repository, schemas (Zod) e index
+  test/                     testes com bun:test
+src/public/                 TypeScript do navegador (uma entrada por arquivo)
+  main.ts                   entrypoint compartilhado carregado pelas páginas
+  dashboard.ts, editor.ts, account.ts, auth.*.ts
+public/                     raiz estática servida pelo Express
+  index.html                login
+  html/                     register, dashboard, editor e account
+  js/                       JavaScript gerado (commitado junto com o código)
+  style/                    CSS
+db/schema.sql               schema de referência do PostgreSQL
+db/seed.sql                 dados de exemplo opcionais
+docs/database/              decisões e consultas de referência
+dev/build.ts                build do frontend
+dev/serve.ts                servidor estático apenas para a UI
+docker-compose.yaml         app + Postgres
+Dockerfile                  imagem com Bun e TeX Live
+```
+
+## Requisitos
+
+### Com Docker
+
+- Docker daemon e Docker Compose. A imagem já instala Bun, as dependências e os pacotes TeX Live necessários (`latexmk`, `texlive-latex-*`, fontes e pacote em português).
+
+### Rodando nativamente
+
+- [Bun](https://bun.sh) 1.x.
+- PostgreSQL em execução, com o banco já criado. O schema usa a extensão `citext`, então o usuário do banco precisa poder criá-la (ou ela já deve existir).
+- `latexmk` disponível no `PATH`, com uma instalação de TeX Live. Sem ele, a compilação de PDF falha.
+
+## Configuração
+
+Copie o arquivo de exemplo e ajuste o que for necessário:
 
 ```bash
 cp .env.example .env
 ```
 
-As variáveis disponíveis em [`.env.example`](.env.example) são:
+O `.env` não é versionado. As variáveis são:
 
 | Variável             | Padrão     | Descrição                                                                          |
 | -------------------- | ---------- | ---------------------------------------------------------------------------------- |
 | `POSTGRES_USER`      | `postgres` | Usuário do banco de dados.                                                         |
 | `POSTGRES_PASSWORD`  | `postgres` | Senha do banco de dados.                                                           |
 | `POSTGRES_DB`        | `app_db`   | Nome do banco de dados.                                                            |
-| `POSTGRES_HOST`      | `postgres` | Host do banco. No Docker é o nome do serviço; rodando nativamente use `localhost`. |
+| `POSTGRES_HOST`      | `postgres` | Host do banco: nome do serviço no Compose; use `localhost` rodando nativamente.    |
 | `POSTGRES_PORT`      | `5432`     | Porta do banco de dados.                                                           |
 | `POSTGRES_HOST_PORT` | `5439`     | Porta do PostgreSQL exposta no host (apenas Docker).                               |
 | `SESSION_TTL_DAYS`   | `30`       | Tempo de vida das sessões de autenticação, em dias.                                |
+| `COMPILE_TIMEOUT_MS` | `15000`    | Timeout da compilação LaTeX, em milissegundos.                                     |
+| `APP_PORT`           | `3000`     | Porta da aplicação no host (apenas Docker).                                        |
 
-## Requisitos do Sistema Host
+O servidor também lê `PORT` (padrão `3000`) para a porta em que escuta. Rodando nativamente, defina `PORT` no ambiente se quiser usar outra porta.
 
-A máquina que irá servir como distribuidora do sistema tem duas opções para rodar:
-
-### Utilizando Docker
-
-- **Requisitos:** Docker daemon instalado e rodando.
-- **Comando de inicialização:** `docker compose up -d`
-- A porta da aplicação no host pode ser alterada com a variável `APP_PORT` (padrão `3000`).
-
-### Rodando nativamente utilizando Bun
-
-- **Requisitos** Bun Runtime, PostgreSQL rodando, banco criado.
-- **Comandos de inicilização:**
-  - `bun build ./src/client/main.ts --outfile ./public/bundle.js --target browser` (Constrói o frontend)
-  - `bun run src/server/server.ts` (Inicia o backend)
-
-> O sistema não configura o PostgreSQL, quem roda local fica responsável por isso.
-
-Ao final, o esperado é que o serviço esteja rodando na porta 3000 da máquina do usuário, ou onde ele foi configurado
+No Docker Compose, `POSTGRES_HOST`, `POSTGRES_PORT` e a porta interna do app são fixos (`postgres`, `5432` e `3000`). O Compose também não repassa `COMPILE_TIMEOUT_MS` para o contêiner: ele usa o padrão de 15 s, a menos que você altere `docker-compose.yaml`.
 
 ## Documentação
 
