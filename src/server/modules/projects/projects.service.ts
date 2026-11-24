@@ -1,4 +1,8 @@
-import { ForbiddenError, NotFoundError } from "../../lib/errors";
+import {
+	ForbiddenError,
+	NotFoundError,
+	ValidationError,
+} from "../../lib/errors";
 import { findMemberRole as findWorkspaceMemberRole } from "../workspaces/workspaces.repository";
 import {
 	deleteProject as archiveProjectRepo,
@@ -6,13 +10,19 @@ import {
 	findArchivedProjectById,
 	findProjectById,
 	findProjectMemberRole,
+	getProjectTags,
+	getTagsByProjectIds,
 	listProjectsForUser,
 	type Project,
+	type ProjectWithTags,
+	replaceProjectTags,
 	restoreProject as restoreProjectRepo,
+	type Tag,
 	updateProject as updatedProjectRepo,
 } from "./projects.repository";
 import type {
 	CreateProjectInput,
+	PutProjectTagsInput,
 	UpdateProjectInput,
 } from "./projects.schemas";
 
@@ -57,10 +67,15 @@ const ensureWrite = async (
 	return project;
 };
 
+const attachTags = async (project: Project): Promise<ProjectWithTags> => {
+	const tags = await getProjectTags(project.id);
+	return { ...project, tags };
+};
+
 export const createProject = async (
 	input: CreateProjectInput,
 	userId: number,
-): Promise<Project> => {
+): Promise<ProjectWithTags> => {
 	const workspaceRole = await findWorkspaceMemberRole(
 		input.workspaceId,
 		userId,
@@ -68,39 +83,46 @@ export const createProject = async (
 	if (!workspaceRole) {
 		throw new ForbiddenError("You are not a member of this workspace");
 	}
-	return createProjectRepo({
+	const project = await createProjectRepo({
 		workspaceId: input.workspaceId,
 		ownerId: userId,
 		title: input.title,
 		description: input.description ?? null,
 		visibility: input.visibility,
 	});
+	return { ...project, tags: [] };
 };
 
 export const listProjects = async (
 	userId: number,
 	workspaceId: number | undefined,
 	archived = false,
-): Promise<Project[]> => {
-	return listProjectsForUser(userId, workspaceId, archived);
+): Promise<ProjectWithTags[]> => {
+	const projects = await listProjectsForUser(userId, workspaceId, archived);
+	const tagsByProject = await getTagsByProjectIds(projects.map((p) => p.id));
+	return projects.map((project) => ({
+		...project,
+		tags: tagsByProject.get(String(project.id)) ?? [],
+	}));
 };
 
 export const getProjectInformation = async (
 	userId: number,
 	projectId: number,
-): Promise<Project & { effectiveRole: string }> => {
+): Promise<ProjectWithTags & { effectiveRole: string }> => {
 	const { project, effectiveRole } = await ensureProjectAccess(
 		projectId,
 		userId,
 	);
-	return { ...project, effectiveRole };
+	const tags = await getProjectTags(project.id);
+	return { ...project, effectiveRole, tags };
 };
 
 export const updateProject = async (
 	userId: number,
 	projectId: number,
 	input: UpdateProjectInput,
-): Promise<Project> => {
+): Promise<ProjectWithTags> => {
 	await ensureWrite(projectId, userId);
 
 	const updated = await updatedProjectRepo(projectId, {
@@ -109,7 +131,7 @@ export const updateProject = async (
 		visibility: input.visibility,
 	});
 	if (!updated) throw new NotFoundError("Project not found");
-	return updated;
+	return attachTags(updated);
 };
 
 export const deleteProject = async (
@@ -126,7 +148,7 @@ export const deleteProject = async (
 export const restoreProject = async (
 	projectId: number,
 	userId: number,
-): Promise<Project> => {
+): Promise<ProjectWithTags> => {
 	const project = await findArchivedProjectById(projectId);
 	if (!project) throw new NotFoundError("Archived project not found");
 	if (project.owner_id !== userId) {
@@ -135,5 +157,40 @@ export const restoreProject = async (
 
 	const restored = await restoreProjectRepo(projectId);
 	if (!restored) throw new NotFoundError("Archived project not found");
-	return restored;
+	return attachTags(restored);
+};
+
+export const getProjectTagsForUser = async (
+	projectId: number,
+	userId: number,
+): Promise<Tag[]> => {
+	await ensureProjectAccess(projectId, userId);
+	return getProjectTags(projectId);
+};
+
+export const replaceProjectTagsForUser = async (
+	projectId: number,
+	userId: number,
+	input: PutProjectTagsInput,
+): Promise<Tag[]> => {
+	const titles = input.tags.map((t) => t.title.trim());
+	const seen = new Set<string>();
+	for (const title of titles) {
+		const key = title.toLowerCase();
+		if (seen.has(key)) {
+			throw new ValidationError([
+				{
+					code: "custom",
+					message: "Duplicate tag titles are not allowed",
+					path: ["tags"],
+				},
+			]);
+		}
+		seen.add(key);
+	}
+
+	await ensureWrite(projectId, userId);
+	const tags = await replaceProjectTags(projectId, userId, titles);
+	if (tags === null) throw new NotFoundError("Project not found");
+	return tags;
 };
