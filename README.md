@@ -92,6 +92,44 @@ O servidor também lê `PORT` (padrão `3000`) para a porta em que escuta. Rodan
 
 No Docker Compose, `POSTGRES_HOST`, `POSTGRES_PORT` e a porta interna do app são fixos (`postgres`, `5432` e `3000`). O Compose também não repassa `COMPILE_TIMEOUT_MS` para o contêiner: ele usa o padrão de 15 s, a menos que você altere `docker-compose.yaml`.
 
+## Rodando com Docker (recomendado)
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+A aplicação fica em `http://localhost:3000` (ou na porta definida em `APP_PORT`). Na primeira inicialização, o Postgres aplica `db/schema.sql` automaticamente; o volume `postgres_data` preserva os dados entre reinícios.
+
+```bash
+docker compose logs -f app   # acompanhar os logs
+docker compose down          # parar os serviços (mantém os dados)
+docker compose down --volumes # parar e apagar o volume do banco
+```
+
+## Rodando nativamente com Bun
+
+```bash
+bun install                  # instalar dependências
+# Configure .env com POSTGRES_HOST=localhost e os dados do seu Postgres.
+bun dev/build.ts             # gera public/js/ a partir de src/public/
+bun run dev                  # servidor com watch (ou: bun run start)
+```
+
+Acesse `http://localhost:3000` (ou a porta definida em `PORT`). O Express serve os arquivos estáticos de `public/` e as rotas da API no mesmo processo.
+
+Sempre que alterar algo em `src/public/`, rode `bun dev/build.ts` novamente. O resultado em `public/js/` é versionado e deve ser commitado junto; o antigo `public/bundle.js` não é usado e está ignorado pelo Git. `bun run serve` inicia um servidor estático em porta aleatória apenas para pré-visualizar a interface; ele **não** atende às rotas da API.
+
+## Primeiro uso
+
+1. Acesse a página de login (`/`) e crie uma conta em [Registrar](public/html/register.html).
+2. No dashboard, crie um workspace e selecione-o na barra lateral.
+3. Crie um projeto dentro do workspace e abra-o pelo link na tabela de projetos.
+4. No editor, crie um arquivo `/main.tex`, marque-o como principal e escreva o documento.
+5. Clique em compilar para gerar o PDF e acompanhar o log em caso de erro.
+
+A navegação é protegida no cliente: páginas sem uma sessão local válida redirecionam para o login com o parâmetro `next`. Isso é apenas uma comodidade de UI; a segurança real está na API, que exige o token Bearer em todas as rotas protegidas.
+
 ## Documentação
 
 - [Decisões de arquitetura do banco de dados](docs/database/SCHEMA.md)
