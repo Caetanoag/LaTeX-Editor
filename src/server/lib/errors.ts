@@ -32,3 +32,12 @@ export class UnauthorizedError extends AppError {
 		super(message, 401, "unauthorized");
 	}
 }
+
+export class ValidationError extends AppError {
+	constructor(
+		public readonly details: unknown,
+		message = "Invalid request data",
+	) {
+		super(message, 400, "validation_error");
+	}
+}
