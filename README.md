@@ -90,7 +90,7 @@ O `.env` não é versionado. As variáveis são:
 
 O servidor também lê `PORT` (padrão `3000`) para a porta em que escuta. Rodando nativamente, defina `PORT` no ambiente se quiser usar outra porta.
 
-No Docker Compose, `POSTGRES_HOST`, `POSTGRES_PORT` e a porta interna do app são fixos (`postgres`, `5432` e `3000`). O Compose também não repassa `COMPILE_TIMEOUT_MS` para o contêiner: ele usa o padrão de 15 s, a menos que você altere `docker-compose.yaml`.
+No Docker Compose, `POSTGRES_HOST`, `POSTGRES_PORT` e a porta interna do app são fixos (`postgres`, `5432` e `3000`). O valor de `COMPILE_TIMEOUT_MS` definido no `.env` é repassado ao contêiner; se ausente, o padrão é 15 s.
 
 ## Rodando com Docker (recomendado)
 
