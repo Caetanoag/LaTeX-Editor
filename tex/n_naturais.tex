@@ -1,0 +1,48 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\newtheorem{theorem}{Teorema}[section]
+
+\title{Soma dos primeiros $n$ números naturais}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{theorem}
+Para todo inteiro $n \geq 1$,
+\[
+  1 + 2 + 3 + \cdots + n = \frac{n(n+1)}{2}.
+\]
+\end{theorem}
+
+\begin{proof}
+Faremos indução sobre $n$.
+
+\textbf{Base} ($n=1$): o lado esquerdo é $1$ e o direito é
+$\dfrac{1\cdot 2}{2} = 1$. A igualdade vale.
+
+\textbf{Hipótese de indução:} suponhamos que, para certo $k \geq 1$,
+\[
+  1 + 2 + \cdots + k = \frac{k(k+1)}{2}.
+\]
+
+\textbf{Passo indutivo:} queremos mostrar a igualdade para $k+1$.
+Somando $k+1$ a ambos os lados da hipótese:
+\[
+  1 + 2 + \cdots + k + (k+1)
+  = \frac{k(k+1)}{2} + (k+1)
+  = \frac{k(k+1) + 2(k+1)}{2}
+  = \frac{(k+1)(k+2)}{2}.
+\]
+O resultado é exatamente a fórmula com $n = k+1$. Pelo Princípio da
+Indução Finita, a igualdade vale para todo $n \geq 1$.
+\end{proof}
+
+\end{document}
