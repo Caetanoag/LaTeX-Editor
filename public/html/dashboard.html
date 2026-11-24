@@ -35,6 +35,15 @@
 				aria-label="Selected workspace actions"
 			>
 				<span class="selection-count" id="workspace-selection-name"></span>
+				<div
+					id="workspace-selection-tags"
+					class="workspace-tags hidden"
+					role="group"
+					aria-label="Local tags for this workspace, saved only in this browser"
+				>
+					<span id="workspace-tags-label" class="workspace-tags-label">Local tags (this browser only)</span>
+					<div id="workspace-selection-chips" class="tag-chips"></div>
+				</div>
 				<div class="selection-actions">
 					<button type="button" id="edit-workspace-button">Edit</button>
 					<button type="button" id="delete-workspace-button">Delete</button>
@@ -114,6 +123,14 @@
 					name="description"
 					maxlength="500"
 				></textarea>
+				<label for="workspace-tags">Tags (this browser only)</label>
+				<input
+					type="text"
+					id="workspace-tags"
+					name="tags"
+					aria-describedby="workspace-tags-help"
+				>
+				<p id="workspace-tags-help" class="form-help">Saved only in this browser. They are not shared with other users or devices; anyone using this browser can see them.</p>
 				<p
 					id="workspace-dialog-error"
 					class="form-error hidden"
