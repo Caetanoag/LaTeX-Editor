@@ -1,0 +1,49 @@
+
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\newtheorem{theorem}{Teorema}[section]
+
+\title{Teorema de Euclides: existem infinitos números primos}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{theorem}[Euclides]
+Existem infinitos números primos.
+\end{theorem}
+
+\begin{proof}
+Suponhamos, por absurdo, que exista apenas uma quantidade finita de
+números primos. Listemo-los como
+\[
+  p_1,\; p_2,\; \dots,\; p_n,
+\]
+todos os primos existentes segundo essa hipótese.
+
+Considere o número
+\[
+  N = p_1 p_2 \cdots p_n + 1.
+\]
+Como $N \geq 2$, pelo Teorema Fundamental da Aritmética $N$ possui ao
+menos um divisor primo $q$. Pela hipótese, $q = p_i$ para algum
+$i \in \{1,\dots,n\}$.
+
+Mas $q \mid N$ e $q \mid p_1 p_2 \cdots p_n$ acarretam
+\[
+  q \mid \bigl(N - p_1 p_2 \cdots p_n\bigr) = 1,
+\]
+o que é impossível, pois $q \geq 2$.
+
+Obtivemos uma contradição. Logo a suposição é falsa e existem
+infinitos números primos.
+\end{proof}
+
+\end{document}
