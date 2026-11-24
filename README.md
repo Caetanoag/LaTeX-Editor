@@ -130,9 +130,41 @@ Sempre que alterar algo em `src/public/`, rode `bun dev/build.ts` novamente. O r
 
 A navegação é protegida no cliente: páginas sem uma sessão local válida redirecionam para o login com o parâmetro `next`. Isso é apenas uma comodidade de UI; a segurança real está na API, que exige o token Bearer em todas as rotas protegidas.
 
-## Documentação
+## API (resumo)
 
-- [Decisões de arquitetura do banco de dados](docs/database/SCHEMA.md)
-- [Consultas de referência do banco de dados](docs/database/QUERIES.md)
-- Diagrama do schema: [`db/generated/diagram.png`](db/generated/diagram.png)
-- Schema em DBML: [`db/generated/schema.dbml`](db/generated/schema.dbml)
+Em geral as rotas retornam JSON; logout e exclusões respondem `204` sem corpo, e a compilação bem-sucedida retorna `application/pdf`. Erros seguem o formato `{ "error", "message", "details?" }`. Como as colunas de ID são `bigint`, os IDs chegam ao cliente como **strings**.
+
+| Grupo        | Rotas                                                                                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Autenticação | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /auth/sessions`, `DELETE /auth/sessions/:id`, `POST /auth/logout-all`, `DELETE /auth/account` |
+| Usuários     | `GET /users/:id` (dados públicos do perfil)                                                                                                                    |
+| Workspaces   | `GET /workspaces`, `POST /workspaces`, `GET /workspaces/:id`, `PATCH /workspaces/:id`, `DELETE /workspaces/:id`                                                 |
+| Projetos     | `GET /projects`, `POST /projects`, `GET /projects/:id`, `PATCH /projects/:id`, `DELETE /projects/:id`, `POST /projects/:id/restore`                              |
+| Arquivos     | `GET/POST /projects/:projectId/files`, `GET/PUT/DELETE /files/:id`, `PATCH /files/:id/main`                                                                    |
+| Compilação   | `POST /files/:id/compile`                                                                                                                                       |
+
+`GET /projects` aceita `workspaceId` e `archived=true` para listar projetos arquivados. `GET /health` serve para checar se a API está viva.
+
+## Desenvolvimento
+
+| Comando                                  | Finalidade                                                              |
+| ---------------------------------------- | ----------------------------------------------------------------------- |
+| `bun install`                            | instalar dependências                                                   |
+| `bun run dev`                            | API com watch, reinicia ao alterar arquivos                             |
+| `bun run start`                          | API sem watch                                                           |
+| `bun dev/build.ts`                       | compilar o frontend para `public/js/`                                   |
+| `bun run serve`                          | servidor estático da UI (sem API)                                       |
+| `bun test src/server/test`               | testes; os de integração exigem API e Postgres rodando                  |
+| `bunx biome check src dev`               | lint, checagem de formatação e ordem de imports                         |
+| `bunx biome format --write src dev`      | aplicar formatação                                                      |
+
+Não há script `build`, `format` ou `typecheck` em `package.json`, nem `tsconfig.json`. Antes de commitar, rode `bun dev/build.ts` e `bunx biome check src dev`.
+
+## Banco de dados
+
+`db/schema.sql` é a fonte da verdade: cria tabelas, papéis/permissões, workspaces, projetos, arquivos, sessões e dados iniciais de permissões. O Compose monta esse arquivo na pasta de inicialização do Postgres, então ele é aplicado apenas quando o volume está vazio. `db/seed.sql` é dados de exemplo opcionais, não aplicados automaticamente.
+
+- [Decisões de arquitetura do banco](docs/database/SCHEMA.md)
+- [Consultas de referência](docs/database/QUERIES.md)
+- [Diagrama do schema](db/generated/diagram.png)
+- [Schema em DBML](db/generated/schema.dbml)
