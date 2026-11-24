@@ -20,14 +20,14 @@ Edição colaborativa em tempo real, convites, compartilhamento e comentários *
 
 ## Stack
 
-| Camada        | Tecnologia                                                                 |
-| ------------- | -------------------------------------------------------------------------- |
-| Backend       | Bun, TypeScript, Express 5, Zod (validação) e `pg`                          |
-| Frontend      | HTML, CSS e TypeScript compilado para JavaScript, sem framework            |
-| Banco         | PostgreSQL (schema em `db/schema.sql`)                                      |
-| Compilação    | `latexmk` + TeX Live no servidor                                            |
-| Build/dev     | Bun (`dev/build.ts` gera `public/js/`; `dev/serve.ts` serve a UI isolada)   |
-| Container     | Docker + Docker Compose                                                     |
+| Camada     | Tecnologia                                                                |
+| ---------- | ------------------------------------------------------------------------- |
+| Backend    | Bun, TypeScript, Express 5, Zod (validação) e `pg`                        |
+| Frontend   | HTML, CSS e TypeScript compilado para JavaScript, sem framework           |
+| Banco      | PostgreSQL (schema em `db/schema.sql`)                                    |
+| Compilação | `latexmk` + TeX Live no servidor                                          |
+| Build/dev  | Bun (`dev/build.ts` gera `public/js/`; `dev/serve.ts` serve a UI isolada) |
+| Container  | Docker + Docker Compose                                                   |
 
 ## Estrutura do repositório
 
@@ -76,17 +76,17 @@ cp .env.example .env
 
 O `.env` não é versionado. As variáveis são:
 
-| Variável             | Padrão     | Descrição                                                                          |
-| -------------------- | ---------- | ---------------------------------------------------------------------------------- |
-| `POSTGRES_USER`      | `postgres` | Usuário do banco de dados.                                                         |
-| `POSTGRES_PASSWORD`  | `postgres` | Senha do banco de dados.                                                           |
-| `POSTGRES_DB`        | `app_db`   | Nome do banco de dados.                                                            |
-| `POSTGRES_HOST`      | `postgres` | Host do banco: nome do serviço no Compose; use `localhost` rodando nativamente.    |
-| `POSTGRES_PORT`      | `5432`     | Porta do banco de dados.                                                           |
-| `POSTGRES_HOST_PORT` | `5439`     | Porta do PostgreSQL exposta no host (apenas Docker).                               |
-| `SESSION_TTL_DAYS`   | `30`       | Tempo de vida das sessões de autenticação, em dias.                                |
-| `COMPILE_TIMEOUT_MS` | `15000`    | Timeout da compilação LaTeX, em milissegundos.                                     |
-| `APP_PORT`           | `3000`     | Porta da aplicação no host (apenas Docker).                                        |
+| Variável             | Padrão     | Descrição                                                                       |
+| -------------------- | ---------- | ------------------------------------------------------------------------------- |
+| `POSTGRES_USER`      | `postgres` | Usuário do banco de dados.                                                      |
+| `POSTGRES_PASSWORD`  | `postgres` | Senha do banco de dados.                                                        |
+| `POSTGRES_DB`        | `app_db`   | Nome do banco de dados.                                                         |
+| `POSTGRES_HOST`      | `postgres` | Host do banco: nome do serviço no Compose; use `localhost` rodando nativamente. |
+| `POSTGRES_PORT`      | `5432`     | Porta do banco de dados.                                                        |
+| `POSTGRES_HOST_PORT` | `5439`     | Porta do PostgreSQL exposta no host (apenas Docker).                            |
+| `SESSION_TTL_DAYS`   | `30`       | Tempo de vida das sessões de autenticação, em dias.                             |
+| `COMPILE_TIMEOUT_MS` | `15000`    | Timeout da compilação LaTeX, em milissegundos.                                  |
+| `APP_PORT`           | `3000`     | Porta da aplicação no host (apenas Docker).                                     |
 
 O servidor também lê `PORT` (padrão `3000`) para a porta em que escuta. Rodando nativamente, defina `PORT` no ambiente se quiser usar outra porta.
 
@@ -130,33 +130,34 @@ Sempre que alterar algo em `src/public/`, rode `bun run build` novamente. O resu
 
 A navegação é protegida no cliente: páginas sem uma sessão local válida redirecionam para o login com o parâmetro `next`. Isso é apenas uma comodidade de UI; a segurança real está na API, que exige o token Bearer em todas as rotas protegidas.
 
+<img src="assets/editor.png" alt="Visão do editor de LaTeX">
 ## API (resumo)
 
 Em geral as rotas retornam JSON; logout e exclusões respondem `204` sem corpo, e a compilação bem-sucedida retorna `application/pdf`. Erros seguem o formato `{ "error", "message", "details?" }`. Como as colunas de ID são `bigint`, os IDs chegam ao cliente como **strings**.
 
-| Grupo        | Rotas                                                                                                                                                          |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Grupo        | Rotas                                                                                                                                                                              |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Autenticação | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /auth/sessions`, `DELETE /auth/sessions/:id`, `POST /auth/logout-all`, `DELETE /auth/account` |
-| Usuários     | `GET /users/:id` (dados públicos do perfil)                                                                                                                    |
-| Workspaces   | `GET /workspaces`, `POST /workspaces`, `GET /workspaces/:id`, `PATCH /workspaces/:id`, `DELETE /workspaces/:id`                                                 |
-| Projetos     | `GET /projects`, `POST /projects`, `GET /projects/:id`, `PATCH /projects/:id`, `DELETE /projects/:id`, `POST /projects/:id/restore`                              |
-| Arquivos     | `GET/POST /projects/:projectId/files`, `GET/PUT/DELETE /files/:id`, `PATCH /files/:id/main`                                                                    |
-| Compilação   | `POST /files/:id/compile`                                                                                                                                       |
+| Usuários     | `GET /users/:id` (dados públicos do perfil)                                                                                                                                        |
+| Workspaces   | `GET /workspaces`, `POST /workspaces`, `GET /workspaces/:id`, `PATCH /workspaces/:id`, `DELETE /workspaces/:id`                                                                    |
+| Projetos     | `GET /projects`, `POST /projects`, `GET /projects/:id`, `PATCH /projects/:id`, `DELETE /projects/:id`, `POST /projects/:id/restore`                                                |
+| Arquivos     | `GET/POST /projects/:projectId/files`, `GET/PUT/DELETE /files/:id`, `PATCH /files/:id/main`                                                                                        |
+| Compilação   | `POST /files/:id/compile`                                                                                                                                                          |
 
 `GET /projects` aceita `workspaceId` e `archived=true` para listar projetos arquivados. `GET /health` serve para checar se a API está viva.
 
 ## Desenvolvimento
 
-| Comando          | Finalidade                                                              |
-| ---------------- | ----------------------------------------------------------------------- |
-| `bun install`    | instalar dependências                                                   |
-| `bun run dev`    | API com watch, reinicia ao alterar arquivos                             |
-| `bun run start`  | API sem watch                                                           |
-| `bun run build`  | compilar o frontend para `public/js/`                                   |
-| `bun run serve`  | servidor estático da UI (sem API)                                       |
-| `bun run test`   | testes; os de integração exigem API e Postgres rodando                  |
-| `bun run check`  | lint, checagem de formatação e ordem de imports                         |
-| `bun run format` | aplicar formatação                                                      |
+| Comando          | Finalidade                                             |
+| ---------------- | ------------------------------------------------------ |
+| `bun install`    | instalar dependências                                  |
+| `bun run dev`    | API com watch, reinicia ao alterar arquivos            |
+| `bun run start`  | API sem watch                                          |
+| `bun run build`  | compilar o frontend para `public/js/`                  |
+| `bun run serve`  | servidor estático da UI (sem API)                      |
+| `bun run test`   | testes; os de integração exigem API e Postgres rodando |
+| `bun run check`  | lint, checagem de formatação e ordem de imports        |
+| `bun run format` | aplicar formatação                                     |
 
 Os scripts `dev`, `start`, `build`, `serve`, `test`, `check` e `format` estão em `package.json`. Não há script `typecheck` nem `tsconfig.json`. Antes de commitar, rode `bun run check` e, se houver alterações em `src/`, `bun run build`.
 
