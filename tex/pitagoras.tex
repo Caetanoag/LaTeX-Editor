@@ -1,0 +1,63 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\newtheorem{theorem}{Teorema}[section]
+\newtheorem*{proofsketch}{Demonstração}
+
+\title{Teorema de Pitágoras}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{theorem}[Pitágoras]
+Em todo triângulo retângulo, o quadrado da medida da hipotenusa é igual
+à soma dos quadrados das medidas dos catetos. Em símbolos: se $a,b$ são
+os catetos e $c$ é a hipotenusa, então
+\[
+  a^{2} + b^{2} = c^{2}.
+\]
+\end{theorem}
+
+\begin{proof}
+Seja $ABC$ um triângulo retângulo com ângulo reto em $C$, catetos
+$BC=a$, $AC=b$ e hipotenusa $AB=c$. Tracemos a altura $CH$ relativa
+à hipotenusa, com $H \in AB$, e denotemos $AH=m$ e $BH=n$, de modo que
+$m+n=c$.
+
+Os triângulos $ACH$ e $ABC$ são semelhantes, pois compartilham o ângulo
+em $A$ e ambos possuem um ângulo reto (em $H$ e em $C$, respectivamente).
+Da semelhança, a razão entre o cateto adjacente a $A$ e a hipotenusa
+é a mesma nos dois triângulos:
+\[
+  \frac{AH}{AC} = \frac{AC}{AB}
+  \quad\Longrightarrow\quad
+  \frac{m}{b} = \frac{b}{c}
+  \quad\Longrightarrow\quad
+  b^{2} = mc. \tag{1}
+\]
+
+Analogamente, os triângulos $CBH$ e $ABC$ são semelhantes (ângulo comum
+em $B$ e ambos retângulos). Logo,
+\[
+  \frac{BH}{BC} = \frac{BC}{AB}
+  \quad\Longrightarrow\quad
+  \frac{n}{a} = \frac{a}{c}
+  \quad\Longrightarrow\quad
+  a^{2} = nc. \tag{2}
+\]
+
+Somando (1) e (2):
+\[
+  a^{2}+b^{2} = nc + mc = c(m+n) = c\cdot c = c^{2}.
+\]
+Isso conclui a demonstração.
+\end{proof}
+
+\end{document}
