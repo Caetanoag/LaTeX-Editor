@@ -1,4 +1,5 @@
 import pool from "../../db/pool";
+import { ForbiddenError } from "../../lib/errors";
 export type ProjectVisibility = "private" | "workspace" | "public";
 
 export type Project = {
@@ -13,6 +14,14 @@ export type Project = {
 	updated_at: Date;
 	archived_at: Date | null;
 };
+
+export type Tag = {
+	id: number;
+	title: string;
+	description: string;
+};
+
+export type ProjectWithTags = Project & { tags: Tag[] };
 const PROJECT_COLUMNS = `
   id, workspace_id, owner_id, title, description, visibility,
   forked_from_id, created_at, updated_at, archived_at
@@ -242,4 +251,141 @@ export const restoreProject = async (
 		[id],
 	);
 	return result.rows[0];
+};
+
+export const getProjectTags = async (projectId: number): Promise<Tag[]> => {
+	const result = await pool.query<Tag>(
+		`
+            select t.id, t.title, t.description
+            from project_tags pt
+            join tags t on t.id = pt.tag_id
+            where pt.project_id = $1
+            order by t.title asc
+        `,
+		[projectId],
+	);
+	return result.rows;
+};
+
+export const getTagsByProjectIds = async (
+	projectIds: number[],
+): Promise<Map<string, Tag[]>> => {
+	const map = new Map<string, Tag[]>();
+	for (const id of projectIds) map.set(String(id), []);
+	if (projectIds.length === 0) return map;
+
+	const result = await pool.query<Tag & { project_id: number | string }>(
+		`
+            select pt.project_id, t.id, t.title, t.description
+            from project_tags pt
+            join tags t on t.id = pt.tag_id
+            where pt.project_id = any($1::bigint[])
+            order by t.title asc
+        `,
+		[projectIds],
+	);
+	for (const row of result.rows) {
+		const key = String(row.project_id);
+		const tags = map.get(key);
+		const tag: Tag = {
+			id: row.id,
+			title: row.title,
+			description: row.description,
+		};
+		if (tags) tags.push(tag);
+		else map.set(key, [tag]);
+	}
+	return map;
+};
+
+export const replaceProjectTags = async (
+	projectId: number,
+	userId: number,
+	titles: string[],
+): Promise<Tag[] | null> => {
+	const client = await pool.connect();
+	try {
+		await client.query("begin");
+
+		const lock = await client.query<Project>(
+			`select ${PROJECT_COLUMNS} from projects where id = $1 and archived_at is null for update`,
+			[projectId],
+		);
+		const project = lock.rows[0];
+		if (!project) {
+			await client.query("rollback");
+			return null;
+		}
+
+		if (project.owner_id !== userId) {
+			const roleResult = await client.query<{ role: string }>(
+				`
+                select r.name as role
+                from project_members pm
+                join roles r on r.id = pm.role_id
+                where pm.project_id = $1
+                and pm.user_id = $2
+                `,
+				[projectId, userId],
+			);
+			const role = roleResult.rows[0]?.role;
+			if (!role || !["owner", "editor"].includes(role)) {
+				await client.query("rollback");
+				throw new ForbiddenError(
+					"You do not have permission to edit this project",
+				);
+			}
+		}
+
+		const tagIds: number[] = [];
+		for (const title of titles) {
+			const upsert = await client.query<Tag>(
+				`
+                    insert into tags (title, description)
+                    values ($1, '')
+                    on conflict (title) do update set title = tags.title
+                    returning id, title, description
+                `,
+				[title],
+			);
+			tagIds.push(upsert.rows[0].id);
+		}
+
+		await client.query(`delete from project_tags where project_id = $1`, [
+			projectId,
+		]);
+		if (tagIds.length > 0) {
+			await client.query(
+				`
+                    insert into project_tags (project_id, tag_id)
+                    select $1, unnest($2::bigint[])
+                    on conflict do nothing
+                `,
+				[projectId, tagIds],
+			);
+		}
+
+		await client.query(`update projects set updated_at = now() where id = $1`, [
+			projectId,
+		]);
+
+		const tagsResult = await client.query<Tag>(
+			`
+                select t.id, t.title, t.description
+                from project_tags pt
+                join tags t on t.id = pt.tag_id
+                where pt.project_id = $1
+                order by t.title asc
+            `,
+			[projectId],
+		);
+
+		await client.query("commit");
+		return tagsResult.rows;
+	} catch (error) {
+		await client.query("rollback");
+		throw error;
+	} finally {
+		client.release();
+	}
 };
