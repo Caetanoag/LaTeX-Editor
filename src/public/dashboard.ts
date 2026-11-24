@@ -1,5 +1,20 @@
 import { AuthService } from "./shared/auth";
 import { hasValidSession } from "./shared/page-guard";
+import {
+	formatTagsInput,
+	isValidTags,
+	normalizeTags,
+	readWorkspaceTags,
+	removeWorkspaceTags,
+	TAGS_CHIPS_LABEL,
+	TAGS_FIELD_LABEL,
+	TAGS_GROUP_ARIA_LABEL,
+	TAGS_HELP_TEXT,
+	TAGS_MORE_TITLE,
+	TAGS_SAVE_ERROR,
+	TAGS_VALIDATION_ERROR,
+	writeWorkspaceTags,
+} from "./shared/workspace-tags";
 
 type Workspace = {
 	id: string;
@@ -43,6 +58,23 @@ const workspaceNameInput =
 	document.querySelector<HTMLInputElement>("#workspace-name");
 const workspaceDescriptionInput = document.querySelector<HTMLTextAreaElement>(
 	"#workspace-description",
+);
+const workspaceTagsInput =
+	document.querySelector<HTMLInputElement>("#workspace-tags");
+const workspaceTagsHelp = document.querySelector<HTMLElement>(
+	"#workspace-tags-help",
+);
+const workspaceTagsGroup = document.querySelector<HTMLElement>(
+	"#workspace-selection-tags",
+);
+const workspaceTagsFieldLabel = document.querySelector<HTMLLabelElement>(
+	'label[for="workspace-tags"]',
+);
+const workspaceTagsLabel = document.querySelector<HTMLElement>(
+	"#workspace-tags-label",
+);
+const workspaceSelectionChips = document.querySelector<HTMLElement>(
+	"#workspace-selection-chips",
 );
 const workspaceDialogError = document.querySelector<HTMLElement>(
 	"#workspace-dialog-error",
@@ -116,7 +148,46 @@ const selectedProjectIds = new Set<string>();
 let editingProjectId: string | null = null;
 let selectedWorkspaceId: string | null = null;
 let editingWorkspaceId: string | null = null;
+let originalWorkspaceFields: { name: string; description: string } | null =
+	null;
 let showArchived = false;
+
+if (workspaceTagsHelp) workspaceTagsHelp.textContent = TAGS_HELP_TEXT;
+if (workspaceTagsFieldLabel)
+	workspaceTagsFieldLabel.textContent = TAGS_FIELD_LABEL;
+if (workspaceTagsLabel) workspaceTagsLabel.textContent = TAGS_CHIPS_LABEL;
+workspaceTagsGroup?.setAttribute("aria-label", TAGS_GROUP_ARIA_LABEL);
+
+const renderTagChips = (
+	container: HTMLElement,
+	tags: string[],
+	limit: number,
+): void => {
+	container.replaceChildren();
+	for (const tag of tags.slice(0, limit)) {
+		const chip = document.createElement("span");
+		chip.className = "tag-chip";
+		chip.textContent = tag;
+		container.appendChild(chip);
+	}
+	const hiddenCount = tags.length - limit;
+	if (hiddenCount > 0) {
+		const more = document.createElement("span");
+		more.className = "tag-chip tag-chip-more";
+		more.textContent = `+${hiddenCount}`;
+		more.title = TAGS_MORE_TITLE(hiddenCount);
+		container.appendChild(more);
+	}
+};
+
+const refreshWorkspaceTags = (workspaceId: string): void => {
+	const button = [...(workspaceList?.querySelectorAll("button") ?? [])].find(
+		(item) => item.dataset.workspaceId === workspaceId,
+	);
+	const chips = button?.querySelector<HTMLElement>(".tag-chips");
+	if (chips) renderTagChips(chips, readWorkspaceTags(workspaceId), 3);
+	updateSelectionCard();
+};
 
 const showMessage = (message: string): void => {
 	if (!dashboardMessage) return;
@@ -153,8 +224,23 @@ const updateSelectionCard = (): void => {
 		selectedWorkspaceId !== null &&
 		currentWorkspace?.id === selectedWorkspaceId;
 	workspaceSelectionCard?.classList.toggle("hidden", !showWorkspace);
-	if (workspaceSelectionName && showWorkspace) {
-		workspaceSelectionName.textContent = currentWorkspace?.name ?? "";
+	const workspaceTags =
+		showWorkspace && selectedWorkspaceId
+			? readWorkspaceTags(selectedWorkspaceId)
+			: [];
+	workspaceTagsGroup?.classList.toggle(
+		"hidden",
+		!showWorkspace || workspaceTags.length === 0,
+	);
+	if (showWorkspace) {
+		if (workspaceSelectionName)
+			workspaceSelectionName.textContent = currentWorkspace?.name ?? "";
+		if (workspaceSelectionChips)
+			renderTagChips(
+				workspaceSelectionChips,
+				workspaceTags,
+				workspaceTags.length,
+			);
 	}
 	if (editWorkspaceButton) {
 		editWorkspaceButton.disabled =
@@ -365,8 +451,21 @@ const renderWorkspaceButtons = (
 	for (const workspace of workspaces) {
 		const button = document.createElement("button");
 		button.type = "button";
-		button.textContent = workspace.name;
+		button.dataset.workspaceId = workspace.id;
+		button.setAttribute("aria-label", workspace.name);
 		button.setAttribute("aria-pressed", String(workspace.id === selectedId));
+
+		const name = document.createElement("span");
+		name.className = "workspace-name";
+		name.textContent = workspace.name;
+		button.appendChild(name);
+
+		const chips = document.createElement("div");
+		chips.className = "tag-chips";
+		chips.setAttribute("aria-hidden", "true");
+		renderTagChips(chips, readWorkspaceTags(workspace.id), 3);
+		button.appendChild(chips);
+
 		button.addEventListener("click", () => {
 			currentWorkspace = workspace;
 			selectedWorkspaceId = workspace.id;
@@ -430,11 +529,13 @@ const createWorkspace = async (
 
 const resetWorkspaceDialog = (): void => {
 	editingWorkspaceId = null;
+	originalWorkspaceFields = null;
 	if (workspaceDialogTitle)
 		workspaceDialogTitle.textContent = "Create Workspace";
 	if (submitWorkspaceButton) submitWorkspaceButton.textContent = "Create";
 	setDialogError(workspaceDialogError, "");
 	createWorkspaceForm?.reset();
+	if (workspaceTagsInput) workspaceTagsInput.value = "";
 };
 
 createWorkspaceButton?.addEventListener("click", () => {
@@ -455,12 +556,20 @@ const openEditWorkspaceDialog = async (workspaceId: string): Promise<void> => {
 			`/workspaces/${workspaceId}`,
 		);
 		editingWorkspaceId = workspaceId;
+		originalWorkspaceFields = {
+			name: workspace.name,
+			description: workspace.description ?? "",
+		};
 		if (workspaceDialogTitle)
 			workspaceDialogTitle.textContent = "Edit Workspace";
 		if (submitWorkspaceButton) submitWorkspaceButton.textContent = "Save";
 		if (workspaceNameInput) workspaceNameInput.value = workspace.name;
 		if (workspaceDescriptionInput)
 			workspaceDescriptionInput.value = workspace.description ?? "";
+		if (workspaceTagsInput)
+			workspaceTagsInput.value = formatTagsInput(
+				readWorkspaceTags(workspaceId),
+			);
 		workspaceDialog?.showModal();
 		workspaceNameInput?.focus();
 	} catch {
@@ -485,6 +594,7 @@ deleteWorkspaceButton?.addEventListener("click", () => {
 			await apiFetch<void>(`/workspaces/${workspaceId}`, {
 				method: "DELETE",
 			});
+			removeWorkspaceTags(workspaceId);
 			if (localStorage.getItem(WORKSPACE_STORAGE_KEY) === workspaceId) {
 				localStorage.removeItem(WORKSPACE_STORAGE_KEY);
 			}
@@ -506,32 +616,60 @@ createWorkspaceForm?.addEventListener("submit", async (event) => {
 		return;
 	}
 
+	const tagsValue = workspaceTagsInput?.value ?? "";
+	if (!isValidTags(tagsValue)) {
+		setDialogError(workspaceDialogError, TAGS_VALIDATION_ERROR);
+		return;
+	}
+	const tags = normalizeTags(tagsValue);
 	const description = workspaceDescriptionInput?.value.trim() ?? "";
 	const payload = {
 		name,
 		description: description === "" ? null : description,
 	};
+	const tagsOnly =
+		editingWorkspaceId !== null &&
+		originalWorkspaceFields !== null &&
+		name === originalWorkspaceFields.name &&
+		description === originalWorkspaceFields.description;
+	const wasCreating = editingWorkspaceId === null;
 	if (submitWorkspaceButton) submitWorkspaceButton.disabled = true;
 	try {
-		let workspace: Workspace;
-		if (editingWorkspaceId) {
-			const response = await apiFetch<{ workspace: Workspace }>(
-				`/workspaces/${editingWorkspaceId}`,
-				{ method: "PATCH", body: JSON.stringify(payload) },
-			);
-			workspace = response.workspace;
-		} else {
-			workspace = await createWorkspace(name, description);
+		let workspaceId = editingWorkspaceId;
+		let savedWorkspace: Workspace | undefined;
+		if (!tagsOnly) {
+			if (editingWorkspaceId) {
+				const response = await apiFetch<{ workspace: Workspace }>(
+					`/workspaces/${editingWorkspaceId}`,
+					{ method: "PATCH", body: JSON.stringify(payload) },
+				);
+				savedWorkspace = response.workspace;
+			} else {
+				savedWorkspace = await createWorkspace(name, description);
+			}
+			workspaceId = savedWorkspace.id;
+			// A failed local save keeps the dialog open; retrying must not POST again.
+			editingWorkspaceId = workspaceId;
+			originalWorkspaceFields = {
+				name: savedWorkspace.name,
+				description: savedWorkspace.description ?? "",
+			};
+		}
+		if (!workspaceId) return;
+		if (!writeWorkspaceTags(workspaceId, tags)) {
+			setDialogError(workspaceDialogError, TAGS_SAVE_ERROR);
+			return;
 		}
 		workspaceDialog?.close();
-		selectedWorkspaceId = editingWorkspaceId ?? null;
-		await loadWorkspaces(workspace.id);
+		selectedWorkspaceId = workspaceId;
+		if (savedWorkspace) await loadWorkspaces(workspaceId);
+		else refreshWorkspaceTags(workspaceId);
 	} catch {
 		setDialogError(
 			workspaceDialogError,
-			editingWorkspaceId
-				? "Unable to update workspace."
-				: "Unable to create workspace.",
+			wasCreating
+				? "Unable to create workspace."
+				: "Unable to update workspace.",
 		);
 	} finally {
 		if (submitWorkspaceButton) submitWorkspaceButton.disabled = false;
