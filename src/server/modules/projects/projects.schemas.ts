@@ -2,6 +2,12 @@ import { z } from "zod";
 
 const VISIBILITIES = ["private", "workspace", "public"] as const;
 
+const tagItemSchema = z
+	.object({
+		title: z.string().trim().min(1).max(50),
+	})
+	.strict();
+
 export const createProjectSchema = z.object({
 	workspaceId: z.coerce.number().int().positive(),
 
@@ -49,5 +55,12 @@ export const listProjectsQuerySchema = z.object({
 		.transform((value) => value === "true"),
 });
 
+export const putProjectTagsSchema = z
+	.object({
+		tags: z.array(tagItemSchema).max(20),
+	})
+	.strict();
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+export type PutProjectTagsInput = z.infer<typeof putProjectTagsSchema>;
