@@ -6,4 +6,5 @@ public/bundle.js
 *.log
 *.bak
 
-plans/
+plans/fluxo.sh
+fluxo.sh
