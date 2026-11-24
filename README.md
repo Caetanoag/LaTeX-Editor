@@ -112,13 +112,13 @@ docker compose down --volumes # parar e apagar o volume do banco
 ```bash
 bun install                  # instalar dependências
 # Configure .env com POSTGRES_HOST=localhost e os dados do seu Postgres.
-bun dev/build.ts             # gera public/js/ a partir de src/public/
+bun run build                # gera public/js/ a partir de src/public/
 bun run dev                  # servidor com watch (ou: bun run start)
 ```
 
 Acesse `http://localhost:3000` (ou a porta definida em `PORT`). O Express serve os arquivos estáticos de `public/` e as rotas da API no mesmo processo.
 
-Sempre que alterar algo em `src/public/`, rode `bun dev/build.ts` novamente. O resultado em `public/js/` é versionado e deve ser commitado junto; o antigo `public/bundle.js` não é usado e está ignorado pelo Git. `bun run serve` inicia um servidor estático em porta aleatória apenas para pré-visualizar a interface; ele **não** atende às rotas da API.
+Sempre que alterar algo em `src/public/`, rode `bun run build` novamente. O resultado em `public/js/` é versionado e deve ser commitado junto; o antigo `public/bundle.js` não é usado e está ignorado pelo Git. `bun run serve` inicia um servidor estático em porta aleatória apenas para pré-visualizar a interface; ele **não** atende às rotas da API.
 
 ## Primeiro uso
 
@@ -147,18 +147,18 @@ Em geral as rotas retornam JSON; logout e exclusões respondem `204` sem corpo, 
 
 ## Desenvolvimento
 
-| Comando                                  | Finalidade                                                              |
-| ---------------------------------------- | ----------------------------------------------------------------------- |
-| `bun install`                            | instalar dependências                                                   |
-| `bun run dev`                            | API com watch, reinicia ao alterar arquivos                             |
-| `bun run start`                          | API sem watch                                                           |
-| `bun dev/build.ts`                       | compilar o frontend para `public/js/`                                   |
-| `bun run serve`                          | servidor estático da UI (sem API)                                       |
-| `bun test src/server/test`               | testes; os de integração exigem API e Postgres rodando                  |
-| `bunx biome check src dev`               | lint, checagem de formatação e ordem de imports                         |
-| `bunx biome format --write src dev`      | aplicar formatação                                                      |
+| Comando          | Finalidade                                                              |
+| ---------------- | ----------------------------------------------------------------------- |
+| `bun install`    | instalar dependências                                                   |
+| `bun run dev`    | API com watch, reinicia ao alterar arquivos                             |
+| `bun run start`  | API sem watch                                                           |
+| `bun run build`  | compilar o frontend para `public/js/`                                   |
+| `bun run serve`  | servidor estático da UI (sem API)                                       |
+| `bun run test`   | testes; os de integração exigem API e Postgres rodando                  |
+| `bun run check`  | lint, checagem de formatação e ordem de imports                         |
+| `bun run format` | aplicar formatação                                                      |
 
-Não há script `build`, `format` ou `typecheck` em `package.json`, nem `tsconfig.json`. Antes de commitar, rode `bun dev/build.ts` e `bunx biome check src dev`.
+Os scripts `dev`, `start`, `build`, `serve`, `test`, `check` e `format` estão em `package.json`. Não há script `typecheck` nem `tsconfig.json`. Antes de commitar, rode `bun run check` e, se houver alterações em `src/`, `bun run build`.
 
 ## Banco de dados
 

@@ -9,7 +9,11 @@
 	"scripts": {
 		"dev": "bun --watch src/server/server.ts",
 		"start": "bun run src/server/server.ts",
-		"serve": "bun dev/serve.ts"
+		"build": "bun dev/build.ts",
+		"serve": "bun dev/serve.ts",
+		"test": "bun test src/server/test",
+		"check": "bunx biome check src dev",
+		"format": "bunx biome format --write src dev"
 	},
 	"dependencies": {
 		"@biomejs/biome": "^2.6.8",
