@@ -131,6 +131,7 @@ Sempre que alterar algo em `src/public/`, rode `bun run build` novamente. O resu
 A navegação é protegida no cliente: páginas sem uma sessão local válida redirecionam para o login com o parâmetro `next`. Isso é apenas uma comodidade de UI; a segurança real está na API, que exige o token Bearer em todas as rotas protegidas.
 
 <img src="assets/editor.png" alt="Visão do editor de LaTeX">
+
 ## API (resumo)
 
 Em geral as rotas retornam JSON; logout e exclusões respondem `204` sem corpo, e a compilação bem-sucedida retorna `application/pdf`. Erros seguem o formato `{ "error", "message", "details?" }`. Como as colunas de ID são `bigint`, os IDs chegam ao cliente como **strings**.
