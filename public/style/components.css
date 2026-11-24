@@ -173,6 +173,59 @@
 .form-error {
 	color: #b00020;
 }
+.form-help {
+	margin: 0;
+	font-size: 0.8rem;
+}
+.sidebar #workspace-list button {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	width: 100%;
+	min-width: 0;
+}
+.workspace-name {
+	display: block;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.tag-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+	min-width: 0;
+	max-width: 100%;
+}
+.tag-chips:empty {
+	display: none;
+}
+.tag-chip {
+	max-width: 100%;
+	padding: 0.1rem 0.35rem;
+	overflow: hidden;
+	border: 1px solid;
+	border-radius: 999px;
+	font-size: 0.7rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.workspace-tags {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.4rem;
+	min-width: 0;
+}
+.workspace-tags.hidden {
+	display: none;
+}
+.workspace-tags-label {
+	font-size: 0.8rem;
+	font-weight: 600;
+	white-space: nowrap;
+}
 .projects-list {
 	grid-area: content;
 	padding: 1rem;
